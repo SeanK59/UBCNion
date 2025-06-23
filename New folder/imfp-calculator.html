@@ -1,0 +1,1146 @@
+<html>
+<head>
+<body>
+<table style="border-width:0px" cellpadding="4" bordercolor="black" align="center">
+<form name="imfpCalc">
+<tbody>
+<tr>
+<td style="border: none;" colspan="2" class="label"><span style="font-size:15pt"><b>Input Formula</b></span></td> 
+<td style="border: none;" colspan="1" class="label"><span style="font-size:15pt"><b>Parsed Formula</b></span></td>
+</tr>
+<tr>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input name="inputFormula" size="8" style="width: 200px;" value="La1.85 Sr0.15 Cu O4"> </span></td>
+<td style="border: none;" colspan="1"><span style="font-size:12pt"><p id="parsed">La<sub>1.85</sub>Sr<sub>0.15</sub>CuO<sub>4</sub></p> </span></td>
+</tr>
+<tr>
+ <td style="border: none;" colspan="2" class="label"><span style="font-size:15pt"><b>Convergence Angle</b></span></td>
+ <td style="border: none;" colspan="2" class="label"><span style="font-size:15pt"><b>Acceptance Angle</b></span></td>
+</tr>
+<tr>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input name="alphaAngle" size="8" style="width: 100px;" value=30> mrad </span></td>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input name="betaAngle" size="8" style="width: 100px;" value=30> mrad </span></td>
+</tr>
+<tr>
+ <td style="border: none;" colspan="2" class="label"><span style="font-size:15pt"><b>Unit Cell Volume</b></span></td>
+ <td style="border: none;" colspan="2" class="label"><span style="font-size:15pt"><b>Mass Density</b></span></td>
+</tr>
+<tr>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input name="cellVolume" size="8" style="width: 100px;" value="188.54"> Å<sup>3</sup> </span></td>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input name="massDensity" size="8" style="width: 100px;" value="7.00451"> g/cm<sup>3</sup> </span></td>
+</tr>
+<tr>
+<td style="border: none;" colspan="2" class="label"><span style="font-size:15pt"><b>Formula Units Per Cell</b></span></td> 
+</tr>
+<tr>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input name="formulaPerCell" size="8" style="width: 50px;" value="2"></span></td>  
+</tr>
+<tr>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input type="radio" id="useVolume" name="mode" value="volume" onclick="checkMode()" checked>
+<label for="useVolume">Unit Cell Volume Mode</label></span></td>
+<td style="border: none;" colspan="2"><span style="font-size:12pt"><input type="radio" id="useMass" name="mode" value="mass" onclick="checkMode()">
+<label for="useMass">Mass Density Mode</label></span></td>
+</tr>
+<tr><td style="border: none;" colspan="2"><span style="font-size:12pt"><input type="button" style="font-size : 15px; width: 60%; height: 30px; background-color: #f2f2f2;" value="Calculate IMFP" onclick="run()"></span></td></tr>
+</tbody></form>
+</table>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<div id="plot" style="width:100%;height:83%;"></div>
+<script>
+var PeriodicTable={  
+'H':{  
+'symbol':'H',
+'Z': 1,
+'mass': 1.008,
+'period': 1,
+'group': 1,
+},
+'He':{  
+'symbol':'He',
+'Z': 2,
+'mass': 4.002602,
+'period': 1,
+'group': 18,
+},
+'Li':{  
+'symbol':'Li',
+'Z': 3,
+'mass': 6.94,
+'period': 2,
+'group': 1,
+},
+'Be':{  
+'symbol':'Be',
+'Z': 4,
+'mass': 9.012,
+'period': 2,
+'group': 2,
+},
+'B':{  
+'symbol':'B',
+'Z': 5,
+'mass': 10.81,
+'period': 2,
+'group': 13,
+},
+'C':{  
+'symbol':'C',
+'Z': 6,
+'mass': 12.011,
+'period': 2,
+'group': 14,
+},
+'N':{  
+'symbol':'N',
+'Z': 7,
+'mass': 14.007,
+'period': 2,
+'group': 15,
+},
+'O':{  
+'symbol':'O',
+'Z': 8,
+'mass': 15.999,
+'period': 2,
+'group': 16,
+},
+'F':{  
+'symbol':'F',
+'Z': 9,
+'mass': 18.998,
+'period': 2,
+'group': 17,
+},
+'Ne':{  
+'symbol':'Ne',
+'Z': 10,
+'mass': 20.1797,
+'period': 2,
+'group': 18,
+},
+'Na':{  
+'symbol':'Na',
+'Z': 11,
+'mass': 22.989,
+'period': 3,
+'group': 1,
+},
+'Mg':{  
+'symbol':'Mg',
+'Z': 12,
+'mass': 24.305,
+'period': 3,
+'group': 2,
+},
+'Al':{  
+'symbol':'Al',
+'Z': 13,
+'mass': 26.982,
+'period': 3,
+'group': 13,
+},
+'Si':{  
+'symbol':'Si',
+'Z': 14,
+'mass': 28.085,
+'period': 3,
+'group': 14,
+},
+'P':{  
+'symbol':'P',
+'Z': 15,
+'mass': 30.974,
+'period': 3,
+'group': 15,
+},
+'S':{  
+'symbol':'S',
+'Z': 16,
+'mass': 32.06,
+'period': 3,
+'group': 16,
+},
+'Cl':{  
+'symbol':'Cl',
+'Z': 17,
+'mass': 35.45,
+'period': 3,
+'group': 17,
+},
+'Ar':{  
+'symbol':'Ar',
+'Z': 18,
+'mass': 39.948,
+'period': 3,
+'group': 18,
+},
+'K':{  
+'symbol':'K',
+'Z': 19,
+'mass': 39.0983,
+'period': 4,
+'group': 1,
+},
+'Ca':{  
+'symbol':'Ca',
+'Z': 20,
+'mass': 40.078,
+'period': 4,
+'group': 2,
+},
+'Sc':{  
+'symbol':'Sc',
+'Z': 21,
+'mass': 44.956,
+'period': 4,
+'group': 3,
+},
+'Ti':{  
+'symbol':'Ti',
+'Z': 22,
+'mass': 47.867,
+'period': 4,
+'group': 4,
+},
+'V':{  
+'symbol':'V',
+'Z': 23,
+'mass': 50.9415,
+'period': 4,
+'group': 5,
+},
+'Cr':{  
+'symbol':'Cr',
+'Z': 24,
+'mass': 51.9961,
+'period': 4,
+'group': 6,
+},
+'Mn':{  
+'symbol':'Mn',
+'Z': 25,
+'mass': 54.938,
+'period': 4,
+'group': 7,
+},
+'Fe':{  
+'symbol':'Fe',
+'Z': 26,
+'mass': 55.845,
+'period': 4,
+'group': 8,
+},
+'Co':{  
+'symbol':'Co',
+'Z': 27,
+'mass': 58.933,
+'period': 4,
+'group': 9,
+},
+'Ni':{  
+'symbol':'Ni',
+'Z': 28,
+'mass': 58.6934,
+'period': 4,
+'group': 10,
+},
+'Cu':{  
+'symbol':'Cu',
+'Z': 29,
+'mass': 63.546,
+'period': 4,
+'group': 11,
+},
+'Zn':{  
+'symbol':'Zn',
+'Z': 30,
+'mass': 65.38,
+'period': 4,
+'group': 12,
+},
+'Ga':{  
+'symbol':'Ga',
+'Z': 31,
+'mass': 69.723,
+'period': 4,
+'group': 13,
+},
+'Ge':{  
+'symbol':'Ge',
+'Z': 32,
+'mass': 72.630,
+'period': 4,
+'group': 14,
+},
+'As':{  
+'symbol':'As',
+'Z': 33,
+'mass': 74.921,
+'period': 4,
+'group': 15,
+},
+'Se':{  
+'symbol':'Se',
+'Z': 34,
+'mass': 78.971,
+'period': 4,
+'group': 16,
+},
+'Br':{  
+'symbol':'Br',
+'Z': 35,
+'mass': 79.904,
+'period': 4,
+'group': 17,
+},
+'Kr':{  
+'symbol':'Kr',
+'Z': 36,
+'mass': 83.798,
+'period': 4,
+'group': 18,
+},
+'Rb':{  
+'symbol':'Rb',
+'Z': 37,
+'mass': 85.4678,
+'period': 5,
+'group': 1,
+},
+'Sr':{  
+'symbol':'Sr',
+'Z': 38,
+'mass': 87.62,
+'period': 5,
+'group': 2,
+},
+'Y':{  
+'symbol':'Y',
+'Z': 39,
+'mass': 88.906,
+'period': 5,
+'group': 3,
+},
+'Zr':{  
+'symbol':'Zr',
+'Z': 40,
+'mass': 91.224,
+'period': 5,
+'group': 4,
+},
+'Nb':{  
+'symbol':'Nb',
+'Z': 41,
+'mass': 92.9064,
+'period': 5,
+'group': 5,
+},
+'Mo':{  
+'symbol':'Mo',
+'Z': 42,
+'mass': 95.95,
+'period': 5,
+'group': 6,
+},
+'Tc':{  
+'symbol':'Tc',
+'Z': 43,
+'mass': 97,
+'period': 5,
+'group': 7,
+},
+'Ru':{  
+'symbol':'Ru',
+'Z': 44,
+'mass': 101.07,
+'period': 5,
+'group': 8,
+},
+'Rh':{  
+'symbol':'Rh',
+'Z': 45,
+'mass': 102.9055,
+'period': 5,
+'group': 9,
+},
+'Pd':{  
+'symbol':'Pd',
+'Z': 46,
+'mass': 106.42,
+'period': 5,
+'group': 10,
+},
+'Ag':{  
+'symbol':'Ag',
+'Z': 47,
+'mass': 107.8682,
+'period': 5,
+'group': 11,
+},
+'Cd':{  
+'symbol':'Cd',
+'Z': 48,
+'mass': 112.414,
+'period': 5,
+'group': 12,
+},
+'In':{  
+'symbol':'In',
+'Z': 49,
+'mass': 114.818,
+'period': 5,
+'group': 13,
+},
+'Sn':{  
+'symbol':'Sn',
+'Z': 50,
+'mass': 118.710,
+'period': 5,
+'group': 14,
+},
+'Sb':{  
+'symbol':'Sb',
+'Z': 51,
+'mass': 121.760,
+'period': 5,
+'group': 15,
+},
+'Te':{  
+'symbol':'Te',
+'Z': 52,
+'mass': 127.60,
+'period': 5,
+'group': 16,
+},
+'I':{  
+'symbol':'I',
+'Z': 53,
+'mass': 126.90447,
+'period': 5,
+'group': 17,
+},
+'Xe':{  
+'symbol':'Xe',
+'Z': 54,
+'mass': 131.293,
+'period': 5,
+'group': 18,
+},
+'Cs':{  
+'symbol':'Cs',
+'Z': 55,
+'mass': 132.9055,
+'period': 6,
+'group': 1,
+},
+'Ba':{  
+'symbol':'Ba',
+'Z': 56,
+'mass': 137.327,
+'period': 6,
+'group': 2,
+},
+'La':{  
+'symbol':'La',
+'Z': 57,
+'mass': 138.9055,
+'period': 6,
+'group':'',
+},
+'Ce':{  
+'symbol':'Ce',
+'Z': 58,
+'mass': 140.116,
+'period': 6,
+'group':'',
+},
+'Pr':{  
+'symbol':'Pr',
+'Z': 59,
+'mass': 140.90766,
+'period': 6,
+'group':'',
+},
+'Nd':{  
+'symbol':'Nd',
+'Z': 60,
+'mass': 144.242,
+'period': 6,
+'group':'',
+},
+'Pm':{  
+'symbol':'Pm',
+'Z': 61,
+'mass': 145,
+'period': 6,
+'group':'',
+},
+'Sm':{  
+'symbol':'Sm',
+'Z': 62,
+'mass': 150.36,
+'period': 6,
+'group':'',
+},
+'Eu':{  
+'symbol':'Eu',
+'Z': 63,
+'mass': 151.964,
+'period': 6,
+'group':'',
+},
+'Gd':{  
+'symbol':'Gd',
+'Z': 64,
+'mass': 157.25,
+'period': 6,
+'group':'',
+},
+'Tb':{  
+'symbol':'Tb',
+'Z': 65,
+'mass': 158.92535,
+'period': 6,
+'group':'',
+},
+'Dy':{  
+'symbol':'Dy',
+'Z': 66,
+'mass': 162.500,
+'period': 6,
+'group':'',
+},
+'Ho':{  
+'symbol':'Ho',
+'Z': 67,
+'mass': 164.93033,
+'period': 6,
+'group':'',
+},
+'Er':{  
+'symbol':'Er',
+'Z': 68,
+'mass': 167.259,
+'period': 6,
+'group':'',
+},
+'Tm':{  
+'symbol':'Tm',
+'Z': 69,
+'mass': 168.9342,
+'period': 6,
+'group':'',
+},
+'Yb':{  
+'symbol':'Yb',
+'Z': 70,
+'mass': 173.045,
+'period': 6,
+'group':'',
+},
+'Lu':{  
+'symbol':'Lu',
+'Z': 71,
+'mass': 174.9668,
+'period': 6,
+'group': 3,
+},
+'Hf':{  
+'symbol':'Hf',
+'Z': 72,
+'mass': 178.49,
+'period': 6,
+'group': 4,
+},
+'Ta':{  
+'symbol':'Ta',
+'Z': 73,
+'mass': 180.94788,
+'period': 6,
+'group': 5,
+},
+'W':{  
+'symbol':'W',
+'Z': 74,
+'mass': 183.84,
+'period': 6,
+'group': 6,
+},
+'Re':{  
+'symbol':'Re',
+'Z': 75,
+'mass': 186.207,
+'period': 6,
+'group': 7,
+},
+'Os':{  
+'symbol':'Os',
+'Z': 76,
+'mass': 190.23,
+'period': 6,
+'group': 8,
+},
+'Ir':{  
+'symbol':'Ir',
+'Z': 77,
+'mass': 192.217,
+'period': 6,
+'group': 9,
+},
+'Pt':{  
+'symbol':'Pt',
+'Z': 78,
+'mass': 195.084,
+'period': 6,
+'group': 10,
+},
+'Au':{  
+'symbol':'Au',
+'Z': 79,
+'mass': 196.966569,
+'period': 6,
+'group': 11,
+},
+'Hg':{  
+'symbol':'Hg',
+'Z': 80,
+'mass': 200.592,
+'period': 6,
+'group': 12,
+},
+'Tl':{  
+'symbol':'Tl',
+'Z': 81,
+'mass': 204.38,
+'period': 6,
+'group': 13,
+},
+'Pb':{  
+'symbol':'Pb',
+'Z': 82,
+'mass': 207.2,
+'period': 6,
+'group': 14,
+},
+'Bi':{  
+'symbol':'Bi',
+'Z': 83,
+'mass': 208.98040,
+'period': 6,
+'group': 15,
+},
+'Po':{  
+'symbol':'Po',
+'Z': 84,
+'mass': 209,
+'period': 6,
+'group': 16,
+},
+'At':{  
+'symbol':'At',
+'Z': 85,
+'mass': 210,
+'period': 6,
+'group': 17,
+},
+'Rn':{  
+'symbol':'Rn',
+'Z': 86,
+'mass': 222,
+'period': 6,
+'group': 18,
+},
+'Fr':{  
+'symbol':'Fr',
+'Z': 87,
+'mass': 223,
+'period': 7,
+'group': 1,
+},
+'Ra':{  
+'symbol':'Ra',
+'Z': 88,
+'mass': 226,
+'period': 7,
+'group': 2,
+},
+'Ac':{  
+'symbol':'Ac',
+'Z': 89,
+'mass': 227,
+'period': 7,
+'group':'',
+},
+'Th':{  
+'symbol':'Th',
+'Z': 90,
+'mass': 232.0377,
+'period': 7,
+'group':'',
+},
+'Pa':{  
+'symbol':'Pa',
+'Z': 91,
+'mass': 231.03588,
+'period': 7,
+'group':'',
+},
+'U':{  
+'symbol':'U',
+'Z': 92,
+'mass': 238.02891,
+'period': 7,
+'group':'',
+},
+'Np':{  
+'symbol':'Np',
+'Z': 93,
+'mass': 237,
+'period': 7,
+'group':'',
+},
+'Pu':{  
+'symbol':'Pu',
+'Z': 94,
+'mass': 244,
+'period': 7,
+'group':'',
+},
+'Am':{  
+'symbol':'Am',
+'Z': 95,
+'mass': 243,
+'period': 7,
+'group':'',
+},
+'Cm':{  
+'symbol':'Cm',
+'Z': 96,
+'mass': 247,
+'period': 7,
+'group':'',
+},
+'Bk':{  
+'symbol':'Bk',
+'Z': 97,
+'mass': 247,
+'period': 7,
+'group':'',
+},
+'Cf':{  
+'symbol':'Cf',
+'Z': 98,
+'mass': 251,
+'period': 7,
+'group':'',
+},
+'Es':{  
+'symbol':'Es',
+'Z': 99,
+'mass': 252,
+'period': 7,
+'group':'',
+},
+'Fm':{  
+'symbol':'Fm',
+'Z': 100,
+'mass': 257,
+'period': 7,
+'group':'',
+},
+'Md':{  
+'symbol':'Md',
+'Z': 101,
+'mass': 258,
+'period': 7,
+'group':'',
+},
+'No':{  
+'symbol':'No',
+'Z': 102,
+'mass': 259,
+'period': 7,
+'group':'',
+},
+'Lr':{  
+'symbol':'Lr',
+'Z': 103,
+'mass': 262,
+'period': 7,
+'group': 3,
+},
+'Rf':{  
+'symbol':'Rf',
+'Z': 104,
+'mass': 267,
+'period': 7,
+'group': 4,
+},
+'Db':{  
+'symbol':'Db',
+'Z': 105,
+'mass': 270,
+'period': 7,
+'group': 5,
+},
+'Sg':{  
+'symbol':'Sg',
+'Z': 106,
+'mass': 269,
+'period': 7,
+'group': 6,
+},
+'Bh':{  
+'symbol':'Bh',
+'Z': 107,
+'mass': 270,
+'period': 7,
+'group': 7,
+},
+'Hs':{  
+'symbol':'Hs',
+'Z': 108,
+'mass': 270,
+'period': 7,
+'group': 8,
+},
+'Mt':{  
+'symbol':'Mt',
+'Z': 109,
+'mass': 278,
+'period': 7,
+'group': 9,
+},
+'Ds':{  
+'symbol':'Ds',
+'Z': 110,
+'mass': 281,
+'period': 7,
+'group': 10,
+},
+'Rg':{  
+'symbol':'Rg',
+'Z': 111,
+'mass': 281,
+'period': 7,
+'group': 11,
+},
+'Cn':{  
+'symbol':'Cn',
+'Z': 112,
+'mass': 285,
+'period': 7,
+'group': 12,
+},
+'Nh':{  
+'symbol':'Nh',
+'Z': 113,
+'mass': 286,
+'period': 7,
+'group': 13,
+},
+'Fl':{  
+'symbol':'Fl',
+'Z': 114,
+'mass': 289,
+'period': 7,
+'group': 14,
+},
+'Mc':{  
+'symbol':'Mc',
+'Z': 115,
+'mass': 289,
+'period': 7,
+'group': 15,
+},
+'Lv':{  
+'symbol':'Lv',
+'Z': 116,
+'mass': 293,
+'period': 7,
+'group': 16,
+},
+'Ts':{  
+'symbol':'Ts',
+'Z': 117,
+'mass': 293,
+'period': 7,
+'group': 17,
+},
+'Og':{  
+'symbol':'Og',
+'Z': 118,
+'mass': 294,
+'period': 7,
+'group': 18,
+}
+};
+function capitalize(string) {
+var str = string.toLowerCase();
+return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function linspace(start,stop,pts){
+var arr = [];
+var step = (stop-start)/pts;
+for (var i=0; i<pts; i++){
+arr.push(start + (step * i));
+}
+return arr;
+}
+function npsum(arr) {
+var total = 0;
+var L = arr.length; 
+for (var i = 0; i < L; i++) {
+total = total + arr[i];
+}
+return total;
+}
+function len(arr){
+return arr.length;
+}
+function norm(arr){
+total = npsum(arr);
+var L = arr.length; 
+for (var i = 0; i < L; i++) {
+arr[i] = arr[i]/total;
+}
+return arr;
+}
+function roundfive(num){
+round = (Math.round(num*100000))/100000;
+return (+round.toFixed(5));
+}
+function checkFormula(){
+with (document.imfpCalc){
+formula = inputFormula.value;
+formula = formula.replace(/[^a-z 0-9\.]+/gi, '');
+formula = formula.split(' ').filter(Boolean);
+var formattedFormula = '';
+for(var a in formula){
+var parse = formula[a].match(/[\d\.]+|\D+/g);
+parse[0] = capitalize(parse[0]);
+if(parse.length<2){parse[1]=1;}
+parse[1] = parseFloat(parse[1]);
+var atomName = parse[0];
+var numAtoms = parse[1]; 
+if(numAtoms==1){formattedFormula = formattedFormula + atomName;}
+else{formattedFormula = formattedFormula + atomName+ '<sub>' + numAtoms + '</sub>';}
+}
+}  
+document.getElementById('parsed').innerHTML = formattedFormula;
+}
+function checkMode(){
+if(document.getElementById('useVolume').checked){
+document.imfpCalc.massDensity.disabled=true;
+document.imfpCalc.massDensity.style.backgroundColor = '#CCCCCC';
+}
+else{
+document.imfpCalc.massDensity.disabled=false;
+document.imfpCalc.massDensity.style.backgroundColor = '#FFFFFF';
+}
+
+if(document.getElementById('useMass').checked){
+document.imfpCalc.cellVolume.disabled=true;
+document.imfpCalc.cellVolume.style.backgroundColor = '#CCCCCC';
+document.imfpCalc.formulaPerCell.disabled=true;
+document.imfpCalc.formulaPerCell.style.backgroundColor = '#CCCCCC';
+} 
+else{
+document.imfpCalc.cellVolume.disabled=false;
+document.imfpCalc.cellVolume.style.backgroundColor = '#FFFFFF';
+document.imfpCalc.formulaPerCell.disabled=false;
+document.imfpCalc.formulaPerCell.style.backgroundColor = '#FFFFFF';
+}
+}
+function IMFP(Z,A,frac,alpha,beta,rho,E0,method){
+if(method == null){method='LiM';}
+var numElem = len(Z);
+var F = (1+E0/1022)/(1+E0/511)**2;
+var Fg= (1+E0/1022)/(1+E0/511);
+var TGT = 2*Fg*E0;
+var a2 = alpha**2;
+var b2 = beta**2;
+var Zef_num = frac.slice();
+var Zef_den = frac.slice();
+var Aef_num = frac.slice();
+var Aef_den = frac.slice();
+var L = frac.length; 
+for (var i = 0; i < L; i++) {
+Zef_num[i] = frac[i]*Math.pow(Z[i],1.3);
+Zef_den[i] = frac[i]*Math.pow(Z[i],0.3);
+Aef_num[i] = frac[i]*Math.pow(A[i],1.3);
+Aef_den[i] = frac[i]*Math.pow(A[i],0.3);
+}
+var Zef = npsum(Zef_num)/npsum(Zef_den);
+var Aef = npsum(Aef_num)/npsum(Aef_den);
+frac = norm(frac);
+qE2 = (5.5*Math.pow(rho,0.3)/(F*E0))**2;
+qc2 = 400;
+coeff = (11*rho**0.3)/(200*F*E0);
+num = (a2 + b2 + 2*qE2 + Math.abs(a2-b2))*qc2;
+den = (a2 + b2 + 2*qc2 + Math.abs(a2-b2))*qE2;
+LiI = 1/(coeff*Math.log(num/den)); 
+qE2g = (5.5*rho**0.3/(Fg*E0))**2;
+num2 = (a2 + b2 + 2*qE2g + Math.abs(a2-b2))*qc2;
+den2 = (a2 + b2 + 2*qc2 + Math.abs(a2-b2))*qE2g;
+LiI2 = 1/(coeff*Math.log(num2/den2));
+e=13.5*Zef/2;
+tgt=E0*(1.0+E0/1022.0)/(1.0+E0/511.0);
+thetae=(e+1e-6)/tgt;
+a2=alpha*alpha*1e-6 + 1e-10;
+b2=beta*beta*1e-6;
+t2=thetae*thetae*1e-6;
+eta1=Math.sqrt((a2+b2+t2)**2-4.0*a2*b2)-a2-b2-t2;
+eta2=2*b2*Math.log(0.5/t2*(Math.sqrt((a2+t2-b2)**2+4*b2*t2)+a2+t2-b2));
+eta3=2*a2*Math.log(0.5/t2*(Math.sqrt((b2+t2-a2)**2+4*a2*t2)+b2+t2-a2));
+eta=(eta1+eta2+eta3)/a2/Math.log(4.0/t2);
+f1=(eta1+eta2+eta3)/2/a2/Math.log(1.0+b2/t2);
+f2=f1;
+if(alpha/beta>1){f2=f1*a2/b2;}
+bstar=thetae*Math.sqrt(Math.exp(f2*Math.log(1.0+b2/t2))-1.0);
+Em = 7.6*Zef**0.36;
+LiM=106*F*E0/Em/Math.log(2*bstar*E0/Em);
+Em = 42.5*Zef**0.47*rho/Aef;
+LiJL=106*F*E0/Em/Math.log(2*bstar*E0/Em);
+output = {'LiI':LiI, 'LiI2':LiI2, 'LiM':LiM, 'LiJL':LiJL};
+return output[method];
+}
+function parseFormula(formula,cellVolume,formulaUnits,debug){
+formula = formula.replace(/[^a-z 0-9\.]+/gi, '');
+formula = formula.split(' ').filter(Boolean);
+if(debug == null){debug=false;}
+if(formulaUnits == null){formulaUnits=1;}
+var atoms = {};
+var totalNumAtoms = 0;
+var totalMass = 0;
+var Z = [];
+var A = [];
+var frac = [];
+var formattedFormula = '';
+for(var a in formula){
+var parse = formula[a].match(/[\d\.]+|\D+/g);
+parse[0] = capitalize(parse[0]);
+if(parse.length<2){parse[1]=1;}
+parse[1] = parseFloat(parse[1]);
+var atomName = parse[0];
+var numAtoms = parse[1]; 
+try {
+var check = PeriodicTable[atomName]['Z'];
+}
+catch(err) {
+return 'Error';
+}
+atoms[atomName] = {'numAtoms':0, 'frac':0, 'Z': PeriodicTable[atomName]['Z'], 'M':PeriodicTable[atomName]['mass']};
+totalNumAtoms = totalNumAtoms + numAtoms;
+totalMass = totalMass + numAtoms*PeriodicTable[atomName]['mass'];
+if(numAtoms==1){formattedFormula = formattedFormula + atomName;}
+else{formattedFormula = formattedFormula + atomName+ '<sub>' + numAtoms + '</sub>';}
+}
+for(var a in formula){
+var parse = formula[a].match(/[\d\.]+|\D+/g);
+parse[0] = capitalize(parse[0]);
+if(parse.length<2){parse[1]=1;}
+parse[1] = parseFloat(parse[1]);
+var atomName = parse[0];
+var numAtoms = parse[1]; 
+atoms[atomName]['numAtoms'] = atoms[atomName]['numAtoms'] + numAtoms;
+atoms[atomName]['frac'] = atoms[atomName]['frac'] + numAtoms/totalNumAtoms;
+}
+for(var atomName in atoms){
+Z.push(atoms[atomName]['Z']);
+A.push(atoms[atomName]['M']);
+frac.push(atoms[atomName]['frac']);
+}
+if(debug){console.log(atoms);}
+return {'Z':Z, 'A':A, 'frac':frac, 'formula':formula.join(''), 'formattedFormula':formattedFormula, 'rho':1.6605*formulaUnits*totalMass/cellVolume, 'totalMass':totalMass};
+}
+function makePlot(parsed,upper){
+compound = parsed['formattedFormula'];
+Z = parsed['Z'];
+A = parsed['A'];
+frac = parsed['frac'];
+rho = parsed['rho'];
+if(upper == null){var upper = 310;}
+var x = linspace(10,upper,301);
+var y = [];
+var y2 = [];
+var L = x.length; 
+for (var i = 0; i < L; i++) {
+y[i] = IMFP(Z,A,frac,alpha,beta,rho,x[i],'LiM');
+y2[i] = IMFP(Z,A,frac,alpha,beta,rho,x[i],'LiI2');
+}
+myPlot = document.getElementById('plot');
+var LiM = {
+x:x,
+y:y,
+type: 'scatter',
+name:'Malis (1988)',
+color: '#7f7f7f',
+hovertemplate: '%{y:.1f} nm',
+};
+var LiI2 = {
+x:x,
+y:y2,
+type: 'scatter',
+fill: 'tonexty',
+name: 'Iakoubovskii (2008)',
+hovertemplate: '%{y:.1f} nm',
+};
+var data = [LiM,LiI2];
+var layout = {
+title: 'IMFP vs Energy<br>of '+compound,
+showlegend: false,
+colorway : ['#182844', '#182844', '#cd7eaf', '#a262a9', '#6f4d96', '#3d3b72', '#182844'],
+font: {
+family: 'Helvetica, monospace',
+size: 18,
+color: '#fffff'
+},
+xaxis: {
+title: {text:'Beam Energy (keV)', y:0},
+rangemode: 'tozero',
+autotick: true,
+ticks: 'outside',
+tick0: 0,
+dtick: 30,
+ticklen: 8,
+tickwidth: 1,
+tickcolor: '#000',
+hoverformat:'.0f',
+},
+yaxis: {
+title:'Inelastic Mean Free Path (nm)',
+rangemode: 'tozero',
+autotick: true,
+ticks: 'outside',
+tick0: 0,
+dtick: 20,
+ticklen: 8,
+tickwidth: 1,
+tickcolor: '#000'
+}
+};
+Plotly.newPlot(myPlot, data, layout, {scrollZoom: false, editable: true, displayModeBar: true, displaylogo: false, toImageButtonOptions:{'format': 'svg','filename':'IMFP_'+parsed['formula'],'height':800, 'width':600}});
+}
+function run(){
+formula = document.imfpCalc.inputFormula.value;
+if(document.getElementById('useVolume').checked){
+cellVolume = parseFloat(document.imfpCalc.cellVolume.value);
+formulaUnits = parseFloat(document.imfpCalc.formulaPerCell.value);
+}
+else{cellVolume=1; formulaUnits=1;}
+alpha = parseFloat(document.imfpCalc.alphaAngle.value)/2.0;
+beta  = parseFloat(document.imfpCalc.betaAngle.value)/2.0;
+parsed = parseFormula(formula,cellVolume,formulaUnits);
+Z = parsed['Z'];
+A = parsed['A'];
+frac = parsed['frac'];
+rho = parsed['rho'];
+if(document.getElementById('useMass').checked){parsed['rho']=document.imfpCalc.massDensity.value; rho = parsed['rho'];}
+document.imfpCalc.massDensity.value = roundfive(rho);
+document.getElementById('parsed').innerHTML = parsed['formattedFormula'];
+makePlot(parsed, 310);
+}
+checkMode();</script>
+</body>
+</head>
+</html>
