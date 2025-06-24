@@ -18,7 +18,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 50px;
         }
 
         .main {
@@ -50,7 +50,7 @@
             grid-template-columns: 30% 40% 30%;
             column-gap: 20px;
             row-gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 4rem;
         }
 
         .field-label {
@@ -80,10 +80,20 @@
             box-sizing: border-box;
         }
 
-        /* Fixed canvas size */
-        #plotImfp {
-            width: 600px;
-            height: 400px;
+        .canvas-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+
+        .canvas-container {
+            text-align: center;
+        }
+
+        .canvas-title {
+            color: #fff;
+            font-size: 16px;
+            margin-top: 0.5rem;
         }
     </style>
 </head>
@@ -116,7 +126,7 @@
         <div class="right-panel">
             <div class="container-plot">
                 <div class="field-label">Formula:</div>
-                <div class="field-value"><input id="formula" type="text" value="La1.85 Sr0.15 Cu O4"></div>
+                <div class="field-value"><input id="formula" type="text" value="La Sb Te"></div>
                 <div class="field-unit"></div>
                 <div class="field-label">Convergence angle:</div>
                 <div class="field-value"><input id="alpha" type="number" step="any" value="0.5"></div>
@@ -125,7 +135,7 @@
                 <div class="field-value"><input id="beta" type="number" step="any" value="20"></div>
                 <div class="field-unit">[mrad]</div>
                 <div class="field-label">Unit cell volume:</div>
-                <div class="field-value"><input id="ucVolume" type="number" step="any" value="188.54"></div>
+                <div class="field-value"><input id="ucVolume" type="number" step="any" value="188.787491"></div>
                 <div class="field-unit">[Å<sup>3</sup>]</div>
                 <div class="field-label">Formula per unit cell:</div>
                 <div class="field-value"><input id="z" type="number" step="any" value="2"></div>
@@ -133,15 +143,23 @@
                 <div class="field-label">Mass density:</div>
                 <div class="field-value"><span id="massDensity"></span></div>
                 <div class="field-unit">[g/cm<sup>3</sup>]</div>
-                <div class="field-label"></div>
             </div>
-            <canvas id="plotImfp" width="500" height="500"></canvas>
+            <div class="canvas-row">
+                <div class="canvas-container">
+                    <div class="canvas-title">Inelastic Mean Free Path</div>
+                    <canvas id="plotImfp" width="500" height="500"></canvas> <!-- explicit size control -->
+                    
+                </div>
+                <div class="canvas-container">
+                    <div class="canvas-title">Knock-on Damage</div>
+                    <canvas id="plotFunc" width="500" height="500"></canvas> <!-- explicit size control -->
+                    
+                </div>
+            </div>
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Load atomic data from external JSON
             fetch('PeriodicTable.json')
                 .then(res => res.json())
                 .then(atomic => {
@@ -151,19 +169,22 @@
                     const difInput = document.getElementById('difrmrad');
                     window.difrmrad = parseFloat(difInput.value) || 1.0;
 
-                    function linspace(start, end) { const a = []; for (let x = start; x <= end; x++)a.push(x); return a; }
-                    function parseFormula(f) { const c = {}; const re = /([A-Z][a-z]*)(\d*\.?\d*)/g; let m; while (m = re.exec(f.replace(/\s+/g, ''))) { c[m[1]] = (c[m[1]] || 0) + (m[2] ? +m[2] : 1); } return c; }
-                    function calculateMolarMass(counts) { let m = 0; for (let e in counts) { m += (atomic[e]?.mass || 0) * counts[e]; } return m; }
-                    function IMFP(a, b, r, r0) { const a2 = a * a, b2 = b * b, F = (1 + r0 / 1022) / (1 + r0 / 511) ** 2, Fg = (1 + r0 / 1022) / (1 + r0 / 511), qE2 = (5.5 * Math.pow(r, 0.3) / (F * r0)) ** 2, qc2 = 400, coef = (11 * Math.pow(r, 0.3)) / (200 * F * r0), n1 = (a2 + b2 + 2 * qE2 + Math.abs(a2 - b2)) * qc2, d1 = (a2 + b2 + 2 * qc2 + Math.abs(a2 - b2)) * qE2, LiM = 1 / (coef * Math.log(n1 / d1)), qE2g = (5.5 * Math.pow(r, 0.3) / (Fg * r0)) ** 2, n2 = (a2 + b2 + 2 * qE2g + Math.abs(a2 - b2)) * qc2, d2 = (a2 + b2 + 2 * qc2 + Math.abs(a2 - b2)) * qE2g, LiI2 = 1 / (coef * Math.log(n2 / d2)); return { LiM, LiI2 }; }
+                    function linspace(start, end) { const arr = []; for (let x = start; x <= end; x++)arr.push(x); return arr; }
+                    function parseFormula(f) { const counts = {}; const re = /([A-Z][a-z]?)(\d*\.?\d*)/g; let m; while (m = re.exec(f.replace(/\s+/g, ''))) { counts[m[1]] = (counts[m[1]] || 0) + (m[2] ? parseFloat(m[2]) : 1); } return counts; }
+                    function calculateMolarMass(counts) { let mass = 0; for (const el in counts) { mass += (atomic[el]?.mass || 0) * counts[el]; } return mass; }
+                    function IMFP(alpha, beta, rho, E0) { const a2 = alpha * alpha, b2 = beta * beta, F = (1 + E0 / 1022) / (1 + E0 / 511) ** 2, Fg = (1 + E0 / 1022) / (1 + E0 / 511), qE2 = (5.5 * Math.pow(rho, 0.3) / (F * E0)) ** 2, qc2 = 400, coeff = (11 * Math.pow(rho, 0.3)) / (200 * F * E0), num1 = (a2 + b2 + 2 * qE2 + Math.abs(a2 - b2)) * qc2, den1 = (a2 + b2 + 2 * qc2 + Math.abs(a2 - b2)) * qE2, LiM = 1 / (coeff * Math.log(num1 / den1)), qE2g = (5.5 * Math.pow(rho, 0.3) / (Fg * E0)) ** 2, num2 = (a2 + b2 + 2 * qE2g + Math.abs(a2 - b2)) * qc2, den2 = (a2 + b2 + 2 * qc2 + Math.abs(a2 - b2)) * qE2g, LiI2 = 1 / (coeff * Math.log(num2 / den2)); return { LiM, LiI2 }; }
 
-                    const ctx = document.getElementById('plotImfp').getContext('2d');
-                    const chart = new Chart(ctx, {
-                        type: 'line', data: {
+                    // IMFP Chart
+                    const ctx1 = document.getElementById('plotImfp').getContext('2d');
+                    const chart1 = new Chart(ctx1, {
+                        type: 'line',
+                        data: {
                             datasets: [
                                 { label: 'Malis (1988)', data: [], borderColor: 'cyan', fill: false, parsing: false },
                                 { label: 'Iakoubovskii (2008)', data: [], borderColor: 'magenta', fill: false, parsing: false }
                             ]
-                        }, options: {
+                        },
+                        options: {
                             responsive: false, maintainAspectRatio: false,
                             scales: {
                                 x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Energy (keV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
@@ -173,20 +194,60 @@
                         }
                     });
 
+                    // Function Chart
+                    const ctx2 = document.getElementById('plotFunc').getContext('2d');
+                    const chart2 = new Chart(ctx2, {
+                        type: 'line',
+                        data: { datasets: [] },
+                        options: {
+                            responsive: false, maintainAspectRatio: false,
+                            scales: {
+                                x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Energy (keV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
+                                y: { min: 0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Max Transfer Energy (eV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
+                            },
+                            plugins: { legend: { labels: { color: '#fff' } } }
+                        }
+                    });
+
                     function updatePlot() {
-                        const a = +document.getElementById('alpha').value;
-                        const b = +document.getElementById('beta').value;
+                        const alpha = +document.getElementById('alpha').value;
+                        const beta = +document.getElementById('beta').value;
                         const V = +document.getElementById('ucVolume').value;
                         const Z = +document.getElementById('z').value;
-                        const counts = parseFormula(document.getElementById('formula').value);
-                        const mol = calculateMolarMass(counts);
-                        const rho = (mol * Z / NA) / (V * 1e-24);
+                        const formula = document.getElementById('formula').value;
+                        const counts = parseFormula(formula);
+                        const molMass = calculateMolarMass(counts);
+                        const rho = (molMass * Z / NA) / (V * 1e-24);
                         document.getElementById('massDensity').textContent = rho.toFixed(4);
 
-                        const en = linspace(1, 200);
-                        chart.data.datasets[0].data = en.map((e, i) => ({ x: e, y: IMFP(a, b, rho, e).LiM }));
-                        chart.data.datasets[1].data = en.map((e, i) => ({ x: e, y: IMFP(a, b, rho, e).LiI2 }));
-                        chart.update();
+                        const energies = linspace(1, 200);
+                        // Update IMFP chart
+                        chart1.data.datasets[0].data = energies.map(e => ({ x: e, y: IMFP(alpha, beta, rho, e).LiM }));
+                        chart1.data.datasets[1].data = energies.map(e => ({ x: e, y: IMFP(alpha, beta, rho, e).LiI2 }));
+                        chart1.update();
+
+                        // Update Function chart
+                        const elements = Object.keys(counts);
+                        chart2.data.datasets = elements.map((el, i) => {
+                            const Am = atomic[el]?.mass || 1;
+                            const data = energies.map(e => {
+                                const Emev = e * 1e-3;
+                                return { x: e, y: 2147.7 * Emev * (Emev + 1.022) / Am };
+                            });
+                            const colors = ['cyan', 'magenta', 'yellow', 'lime', 'orange','teal', 'pink', 'violet', 'blue', 'red'];
+                            return { label: el, data, borderColor: colors[i % colors.length], fill: false, parsing: false };
+                        });
+                        // Add horizontal threshold line at y=25
+                        chart2.data.datasets.push({
+                            label: 'Typical knock-on damage threshold',
+                            data: [{ x: 0, y: 25 }, { x: 200, y: 25 }],
+                            borderColor: 'white',
+                            borderDash: [],
+                            fill: false,
+                            pointRadius: 0,
+                            parsing: false
+                        });
+                        chart2.update();
                     }
 
                     function updateValues() {
