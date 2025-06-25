@@ -88,12 +88,13 @@
 
         .canvas-container {
             text-align: center;
+            width: 100%;    /* takes up half of the right-panel */
         }
 
         .canvas-title {
             color: #fff;
-            font-size: 16px;
-            margin-top: 0.5rem;
+            font-size: 20px;
+            margin-bottom: 1rem;
         }
     </style>
 </head>
@@ -147,12 +148,12 @@
             <div class="canvas-row">
                 <div class="canvas-container">
                     <div class="canvas-title">Inelastic Mean Free Path</div>
-                    <canvas id="plotImfp" width="500" height="500"></canvas> <!-- explicit size control -->
+                    <canvas id="plotImfp" ></canvas> <!-- explicit size control -->
                     
                 </div>
                 <div class="canvas-container">
                     <div class="canvas-title">Knock-on Damage</div>
-                    <canvas id="plotFunc" width="500" height="500"></canvas> <!-- explicit size control -->
+                    <canvas id="plotFunc" ></canvas> <!-- explicit size control -->
                     
                 </div>
             </div>
@@ -185,12 +186,12 @@
                             ]
                         },
                         options: {
-                            responsive: false, maintainAspectRatio: false,
+                            responsive: true, maintainAspectRatio: true, aspectRatio: 600 / 500,
                             scales: {
                                 x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Energy (keV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
                                 y: { min: 0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'IMFP (nm)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
                             },
-                            plugins: { legend: { labels: { color: '#fff' } } }
+                            plugins: { legend: { labels: { color: '#fff', filter: function (item) { return item.text; } } } }
                         }
                     });
 
@@ -200,12 +201,12 @@
                         type: 'line',
                         data: { datasets: [] },
                         options: {
-                            responsive: false, maintainAspectRatio: false,
+                            responsive: true, maintainAspectRatio: true, aspectRatio: 600 / 500,
                             scales: {
                                 x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Energy (keV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
                                 y: { min: 0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Max Transfer Energy (eV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
                             },
-                            plugins: { legend: { labels: { color: '#fff' } } }
+                            plugins: { legend: { labels: { color: '#fff', filter: function (item) { return item.text; } } } }
                         }
                     });
 
@@ -224,6 +225,20 @@
                         // Update IMFP chart
                         chart1.data.datasets[0].data = energies.map(e => ({ x: e, y: IMFP(alpha, beta, rho, e).LiM }));
                         chart1.data.datasets[1].data = energies.map(e => ({ x: e, y: IMFP(alpha, beta, rho, e).LiI2 }));
+
+                        // Add vertical line at current voltage
+                        const v = +voltageEl.value;
+                        const yM = energies.map(e => IMFP(alpha, beta, rho, e).LiM);
+                        const yI = energies.map(e => IMFP(alpha, beta, rho, e).LiI2);
+                        const maxY1 = Math.max(...yM, ...yI);
+                        chart1.data.datasets[2] = {
+                            data: [{ x: v, y: 0 }, { x: v, y: maxY1 }],
+                            borderColor: 'white',
+                            borderDash: [6, 6],
+                            fill: false,
+                            pointRadius: 0,
+                            parsing: false
+                        };
                         chart1.update();
 
                         // Update Function chart
@@ -243,6 +258,18 @@
                             data: [{ x: 0, y: 25 }, { x: 200, y: 25 }],
                             borderColor: 'white',
                             borderDash: [],
+                            fill: false,
+                            pointRadius: 0,
+                            parsing: false
+                        });
+                        // Add vertical line at x=voltage
+                        // const v = +voltageEl.value;
+                        const allY2 = chart2.data.datasets.flatMap(ds => ds.data.map(pt => pt.y));
+                        const maxY2 = Math.max(...allY2);
+                        chart2.data.datasets.push({
+                            data: [{ x: v, y: 0 }, { x: v, y: maxY2 }],
+                            borderColor: 'white',
+                            borderDash: [6,6],
                             fill: false,
                             pointRadius: 0,
                             parsing: false
