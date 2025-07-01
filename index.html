@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UBC Nion</title>
+    <title>Online Calculators for STEM-EELS</title>
     <!-- Chart.js for plotting -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
     <style>
@@ -43,6 +43,17 @@
             grid-template-columns: 40% 20% 40%;
             column-gap: 30px;
             row-gap: 1rem;
+            margin-bottom: 20rem;
+        }
+
+        .credit-container {
+            display: flex;
+            width: 80%;
+            margin-top: 1rem;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color:#ccc;
         }
 
         .container-plot {
@@ -122,6 +133,16 @@
                 <div class="field-label">=</div>
                 <div class="field-value"><span id="momentum"></span></div>
                 <div class="field-unit">[Å<sup>-1</sup>]</div>
+            </div>
+            <div class="credit-container">
+                <p>UBC Nion is a web-based tool for calculating inelastic mean free path (IMFP) and knock-on damage threshold for electron microscopy.
+                    The IMFP calculator codes were modified from 
+                    <a href="https://www.aahusain.com/posts/2020/11/electron-imfp-estimate/" target="_blank" style="color:#66ccff;">Dr. A. Husain's codes</a>, 
+                    which were based on <a href="https://sites.google.com/view/tem-eels-org/tem-eels-org/" target="_blank" style="color:#66ccff;">the Matlab code of Dr. R. Egerton</a>.
+                </p>
+            </div>
+            <div class="credit-container">
+                <p>Webpage maintained by <a href="sean.kung@ubc.ca" target="_blank" style="color:#66ccff;">Sean Kung</a> at the University of British Columbia.</p>
             </div>
         </div>
         <div class="right-panel">
