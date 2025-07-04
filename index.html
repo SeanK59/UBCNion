@@ -18,7 +18,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 25px;
         }
 
         .main {
@@ -43,7 +43,7 @@
             grid-template-columns: 40% 20% 40%;
             column-gap: 30px;
             row-gap: 1rem;
-            margin-bottom: 20rem;
+            margin-bottom: 2rem;
         }
 
         .credit-container {
@@ -112,7 +112,7 @@
 
 <body>
     <header>
-        <h1>UBC Nion</h1>
+        <h1>Online Calculators for STEM-EELS</h1>
     </header>
     <div class="main">
         <div class="left-panel">
@@ -124,9 +124,15 @@
                         <option value="200">200</option>
                     </select></div>
                 <div class="field-unit">[keV]</div>
+
+                <div class="field-label">beta (v/c):</div>
+                <div class="field-value"><span id="betavc"></span></div>
+                <div class="field-unit"></div>
+
                 <div class="field-label">Electron wavelength:</div>
                 <div class="field-value"><span id="wavelength"></span></div>
                 <div class="field-unit">[Å]</div>
+                
                 <div class="field-label">Momentum transfer:</div>
                 <div class="field-value"><input id="difrmrad" type="number" step="any" value="1.0"></div>
                 <div class="field-unit">[mrad]</div>
@@ -135,14 +141,15 @@
                 <div class="field-unit">[Å<sup>-1</sup>]</div>
             </div>
             <div class="credit-container">
-                <p>UBC Nion is a web-based tool for calculating inelastic mean free path (IMFP) and knock-on damage threshold for electron microscopy.
+                <p>This is a web-based tool for calculating inelastic mean free path (IMFP) and knock-on damage threshold for transmission electron microscopy.
                     The IMFP calculator codes were modified from 
                     <a href="https://www.aahusain.com/posts/2020/11/electron-imfp-estimate/" target="_blank" style="color:#66ccff;">Dr. A. Husain's codes</a>, 
                     which were based on <a href="https://sites.google.com/view/tem-eels-org/tem-eels-org/" target="_blank" style="color:#66ccff;">the Matlab code of Dr. R. Egerton</a>.
+                    Knock-on damage threshold calculations were adapted from <a href="https://doi.org/10.1016/j.micron.2004.02.003" target="_blank" style="color:#66ccff;">Egerton, Li and Malac, Radiation Damage in the TEM and SEM, Micron 35 399–409 (2004)</a>.
                 </p>
             </div>
             <div class="credit-container">
-                <p>Webpage maintained by <a href="sean.kung@ubc.ca" target="_blank" style="color:#66ccff;">Sean Kung</a> at the University of British Columbia.</p>
+                <p>Webpage maintained by <a href="mailto:sean.kung@ubc.ca" target="_blank" style="color:#66ccff;">Sean Kung</a> at the University of British Columbia.</p>
             </div>
         </div>
         <div class="right-panel">
@@ -165,6 +172,9 @@
                 <div class="field-label">Mass density:</div>
                 <div class="field-value"><span id="massDensity"></span></div>
                 <div class="field-unit">[g/cm<sup>3</sup>]</div>
+                <div class="field-label">Diffraction limited probe:</div>
+                <div class="field-value"><span id="diameter"></span></div>
+                <div class="field-unit">[Å]</div>
                 
             </div>
             <div class="canvas-row">
@@ -187,10 +197,16 @@
                 .then(res => res.json())
                 .then(atomic => {
                     const NA = 6.02214076e23;
+                    const hbar = 6.582119569e-16; // reduced Planck's constant in eV⋅s
+                    const c = 2.99792458e8; // speed of light in m/s
+                    const mc2 = 510.99891; /* mc^2 of electron in keV */
                     const lambdaValues = { 30: 0.069790834221, 80: 0.04175717201, 200: 0.025079347455 };
                     const voltageEl = document.getElementById('voltage');
                     const difInput = document.getElementById('difrmrad');
                     window.difrmrad = parseFloat(difInput.value) || 1.0;
+                    
+                    //const velocity = (Math.sqrt(1 - 1 / (gamma * gamma))) * c; // electron velocity in m/s
+                    //const totalE = gamma * mc2; // total energy in keV
 
                     function linspace(start, end) { const arr = []; for (let x = start; x <= end; x++)arr.push(x); return arr; }
                     function parseFormula(f) { const counts = {}; const re = /([A-Z][a-z]?)(\d*\.?\d*)/g; let m; while (m = re.exec(f.replace(/\s+/g, ''))) { counts[m[1]] = (counts[m[1]] || 0) + (m[2] ? parseFloat(m[2]) : 1); } return counts; }
@@ -294,7 +310,7 @@
                         // now the Malis “LiM” extension with impact-parameter b* and Em
                         // (see lines computing e, thetae, eta1..3, f1…bstar…Em…LiM)
                         const e = 13.5 * Zef / 2.0;  // Koppe approx for mean energy loss
-                        const tgt = E0 * (1 + E0 / 1022) / (1 + E0 / 511);  // E0 in keV
+                        const tgt = E0 * (1 + E0 / 1022) / (1 + E0 / 511);  // 2*gamma*T, E0 in keV
                         const thetae = (e + 1e-6) / tgt;  // in mrad
 
                         // switch to rad for b* calculation
@@ -327,6 +343,7 @@
                     }
 
                     function updatePlot() {
+                        const v = +voltageEl.value;  // in keV
                         const alpha = +document.getElementById('alpha').value;
                         const beta = +document.getElementById('beta').value;
                         const V = +document.getElementById('ucVolume').value;
@@ -336,6 +353,7 @@
                         const molMass = calculateMolarMass(counts);
                         const rho = (molMass * Z / NA) / (V * 1e-24);
                         document.getElementById('massDensity').textContent = rho.toFixed(4);
+                        document.getElementById('diameter').textContent = (0.61* lambdaValues[v]/alpha*1e3).toFixed(4);
 
                         const energies = linspace(1, 200);
                         // new (full-routine) calls:
@@ -362,7 +380,6 @@
                         }));
 
                         // Add vertical line on IMFP chart
-                        const v = +voltageEl.value;
                         // const yM = energies.map(e => IMFP_full(parsed.Z, parsed.A, parsed.frac, alpha, beta, rho, e, 'LiM') );
                         // const yI = energies.map(e => IMFP_full(parsed.Z, parsed.A, parsed.frac, alpha, beta, rho, e, 'LiI2') );
                         const maxY1 = Math.max(IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiM'), 
@@ -400,7 +417,6 @@
                             parsing: false
                         });
                         // Add vertical line at x=voltage
-                        // const v = +voltageEl.value;
                         const allY2 = chart2.data.datasets.flatMap(ds => ds.data.map(pt => pt.y));
                         const maxY2 = Math.max(...allY2);
                         chart2.data.datasets.push({
@@ -415,9 +431,12 @@
                     }
 
                     function updateValues() {
-                        const v = +voltageEl.value;
+                        const v = +voltageEl.value;  // in keV
+                        const gamma = 1 + v / mc2; // relativistic factor
+                        //const lambda = 12.26425966 / Math.sqrt(v * (1 + v*0.978475668e-6)); // in angstroms
                         document.getElementById('wavelength').textContent = lambdaValues[v].toFixed(4);
                         document.getElementById('momentum').textContent = (1 / lambdaValues[v] * 0.001 * window.difrmrad).toFixed(4);
+                        document.getElementById('betavc').textContent = (Math.sqrt(1 - 1/gamma**2)).toFixed(4);
                         updatePlot();
                     }
 
