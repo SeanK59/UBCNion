@@ -102,6 +102,11 @@
             width: 100%;    /* takes up half of the right-panel */
         }
 
+        .canvas-container2 {
+            text-align: center;
+            width: 75%;    /* takes up half of the left-panel */
+        }
+
         .canvas-title {
             color: #fff;
             font-size: 20px;
@@ -139,6 +144,22 @@
                 <div class="field-label">=</div>
                 <div class="field-value"><span id="momentum"></span></div>
                 <div class="field-unit">[Å<sup>-1</sup>]</div>
+
+                <div class="field-label">Energy loss:</div>
+                <div class="field-value"><input id="eloss" type="number" step="any" value="40.0"></div>
+                <div class="field-unit">[eV]</div>
+                <div class="field-label">Characteristic half-angle θ<sub>E</sub> =</div>
+                <div class="field-value"><span id="thE"></span></div>
+                <div class="field-unit">[mrad]</div>
+                <div class="field-label">Bethe ridge cuttoff θ<sub>r</sub> =</div>
+                <div class="field-value"><span id="ridge"></span></div>
+                <div class="field-unit">[mrad]</div>
+            </div>
+            <div class="canvas-row">
+                <div class="canvas-container2">
+                    <div class="canvas-title">Inelastic Delocalization</div>
+                    <canvas id="plotDeloc"></canvas> 
+                </div>
             </div>
             <div class="credit-container">
                 <p>This is a web-based tool for calculating inelastic mean free path (IMFP) and knock-on damage threshold for transmission electron microscopy.
@@ -175,17 +196,16 @@
                 <div class="field-label">Diffraction limited probe:</div>
                 <div class="field-value"><span id="diameter"></span></div>
                 <div class="field-unit">[Å]</div>
-                
             </div>
             <div class="canvas-row">
                 <div class="canvas-container">
                     <div class="canvas-title">Inelastic Mean Free Path</div>
-                    <canvas id="plotImfp" ></canvas> <!-- explicit size control -->
+                    <canvas id="plotImfp" ></canvas> 
                     
                 </div>
                 <div class="canvas-container">
                     <div class="canvas-title">Knock-on Damage</div>
-                    <canvas id="plotFunc" ></canvas> <!-- explicit size control -->
+                    <canvas id="plotKnock" ></canvas> 
                     
                 </div>
             </div>
@@ -199,11 +219,14 @@
                     const NA = 6.02214076e23;
                     const hbar = 6.582119569e-16; // reduced Planck's constant in eV⋅s
                     const c = 2.99792458e8; // speed of light in m/s
+                    //const hbarc = 1973.26980444041; // hbar*c in eV⋅Å
                     const mc2 = 510.99891; /* mc^2 of electron in keV */
                     const lambdaValues = { 30: 0.069790834221, 80: 0.04175717201, 200: 0.025079347455 };
                     const voltageEl = document.getElementById('voltage');
                     const difInput = document.getElementById('difrmrad');
+                    const elossInput = document.getElementById('eloss');  // in eV
                     window.difrmrad = parseFloat(difInput.value) || 1.0;
+                    window.eloss = parseFloat(elossInput.value) || 40.0;
                     
                     //const velocity = (Math.sqrt(1 - 1 / (gamma * gamma))) * c; // electron velocity in m/s
                     //const totalE = gamma * mc2; // total energy in keV
@@ -234,7 +257,7 @@
                     });
 
                     // Knock-on damage Chart
-                    const ctx2 = document.getElementById('plotFunc').getContext('2d');
+                    const ctx2 = document.getElementById('plotKnock').getContext('2d');
                     const chart2 = new Chart(ctx2, {
                         type: 'line',
                         data: { datasets: [] },
@@ -243,6 +266,21 @@
                             scales: {
                                 x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Energy (keV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
                                 y: { min: 0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Max Transfer Energy (eV)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
+                            },
+                            plugins: { legend: { labels: { color: '#fff', filter: function (item) { return item.text; } } } }
+                        }
+                    });
+
+                    // Delocalization Chart
+                    const ctx3 = document.getElementById('plotDeloc').getContext('2d');
+                    const chart3 = new Chart(ctx3, {
+                        type: 'line',
+                        data: { datasets: [] },
+                        options: {
+                            responsive: true, maintainAspectRatio: true, aspectRatio: 600 / 500,
+                            scales: {
+                                x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Distance (nm)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
+                                y: { min: 0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Intensity (Arb. Units)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
                             },
                             plugins: { legend: { labels: { color: '#fff', filter: function (item) { return item.text; } } } }
                         }
@@ -380,8 +418,6 @@
                         }));
 
                         // Add vertical line on IMFP chart
-                        // const yM = energies.map(e => IMFP_full(parsed.Z, parsed.A, parsed.frac, alpha, beta, rho, e, 'LiM') );
-                        // const yI = energies.map(e => IMFP_full(parsed.Z, parsed.A, parsed.frac, alpha, beta, rho, e, 'LiI2') );
                         const maxY1 = Math.max(IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiM'), 
                         IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiI2'),
                         IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiJL'));
@@ -437,11 +473,14 @@
                         document.getElementById('wavelength').textContent = lambdaValues[v].toFixed(4);
                         document.getElementById('momentum').textContent = (1 / lambdaValues[v] * 0.001 * window.difrmrad).toFixed(4);
                         document.getElementById('betavc').textContent = (Math.sqrt(1 - 1/gamma**2)).toFixed(4);
+                        document.getElementById('thE').textContent = ( (window.eloss/v*gamma)/(1+gamma) ).toFixed(4);
+                        document.getElementById('ridge').textContent = ( Math.sqrt((window.eloss/v/1000 * 2*gamma) / (1 + gamma))*1000 ).toFixed(4);  //convert to mrad
                         updatePlot();
                     }
 
                     voltageEl.addEventListener('change', updateValues);
                     difInput.addEventListener('input', () => { window.difrmrad = parseFloat(difInput.value) || 1.0; updateValues(); });
+                    elossInput.addEventListener('input', () => { window.eloss = parseFloat(elossInput.value) || 40.0; updateValues(); });
                     ['formula', 'alpha', 'beta', 'ucVolume', 'z'].forEach(id => document.getElementById(id).addEventListener('input', updatePlot));
 
                     updateValues();
