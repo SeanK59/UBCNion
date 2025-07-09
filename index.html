@@ -43,7 +43,7 @@
             grid-template-columns: 40% 20% 40%;
             column-gap: 30px;
             row-gap: 1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
         }
 
         .credit-container {
@@ -167,6 +167,7 @@
                     <a href="https://www.aahusain.com/posts/2020/11/electron-imfp-estimate/" target="_blank" style="color:#66ccff;">Dr. A. Husain's codes</a>, 
                     which were based on <a href="https://sites.google.com/view/tem-eels-org/tem-eels-org/" target="_blank" style="color:#66ccff;">the Matlab code of Dr. R. Egerton</a>.
                     Knock-on damage threshold calculations were adapted from <a href="https://doi.org/10.1016/j.micron.2004.02.003" target="_blank" style="color:#66ccff;">Egerton, Li and Malac, Radiation Damage in the TEM and SEM, Micron 35 399–409 (2004)</a>.
+                    The delocalization calculator is based on the <a href="https://doi.org/10.1007/978-1-4419-9583-4" target="_blank" style="color:#66ccff;">R.F. Egerton's Electron Energy-loss Spectroscopy in the Electron Microscope</a>, Sec.3.11.
                 </p>
             </div>
             <div class="credit-container">
@@ -275,12 +276,17 @@
                     const ctx3 = document.getElementById('plotDeloc').getContext('2d');
                     const chart3 = new Chart(ctx3, {
                         type: 'line',
-                        data: { datasets: [] },
+                        data: {
+                            datasets: [
+                                { label: 'Wentzel-Lenz', data: [], borderColor: 'cyan', fill: false, parsing: false },
+                                { label: 'Bethe cutoff', data: [], borderColor: 'magenta', fill: false, parsing: false }
+                            ]
+                        },
                         options: {
                             responsive: true, maintainAspectRatio: true, aspectRatio: 600 / 500,
                             scales: {
-                                x: { type: 'linear', min: 0, max: 200, ticks: { stepSize: 50, color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Distance (nm)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
-                                y: { min: 0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Intensity (Arb. Units)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
+                                x: { type: 'logarithmic', min: 0.1, max: 100, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Distance (Å)', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } },
+                                y: { type: 'logarithmic', min: 1e-3, max: 1.0, ticks: { color: '#fff', font: { size: 14 } }, title: { display: true, text: 'Point Spred Function', color: '#fff', font: { size: 16 } }, grid: { color: '#333' } }
                             },
                             plugins: { legend: { labels: { color: '#fff', filter: function (item) { return item.text; } } } }
                         }
@@ -380,6 +386,16 @@
                         return outputs[method];
                     }
 
+                    function logspace(start, end, points, base = 10) {
+                        const logStart = Math.log(start) / Math.log(base);
+                        const logEnd = Math.log(end) / Math.log(base);
+                        const step = (logEnd - logStart) / (points - 1);
+
+                        return Array.from({ length: points }, (_, i) =>
+                            Math.pow(base, logStart + step * i)
+                        );
+                    }
+
                     function updatePlot() {
                         const v = +voltageEl.value;  // in keV
                         const alpha = +document.getElementById('alpha').value;
@@ -464,6 +480,24 @@
                             parsing: false
                         });
                         chart2.update();
+
+                        // Update delocalization chart
+                        const distance = logspace(0.1, 100, 200);
+                        const Zef = npsum(normFracArr.map((f, i) => f * Zarr[i]));
+                        const r0 = 0.529177210903*Zef**(-1/3)  // Lenz model, Bohr radius is in A
+                        const k0 = 2 * Math.PI / lambdaValues[v]; // wavevector in 1/Å
+                        const gamma = 1 + v / mc2; // relativistic factor
+                        const thE = (window.eloss / v * gamma) / (1 + gamma) / 1000; // in rad
+                        const thR = Math.sqrt(2*thE); // in rad
+                        chart3.data.datasets[0].data = distance.map(d => ({
+                            x: d,
+                            y: Math.exp(-2*k0*thE*d)/(1+d**2/r0**2)
+                        }));
+                        chart3.data.datasets[1].data = distance.map(d => ({
+                            x: d,
+                            y: Math.exp(-2*k0*thE*d)/(1+d**2 * k0**2 * thR**2) 
+                        }));
+                        chart3.update();
                     }
 
                     function updateValues() {
