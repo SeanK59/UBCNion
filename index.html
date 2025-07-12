@@ -8,6 +8,32 @@
     <!-- Chart.js for plotting -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
     <style>
+        @media (max-width: 800px) {
+        /* Stack left/right panels */
+        .main {
+            flex-direction: column;
+        }
+        .left-panel,
+        .right-panel {
+            width: 100% !important;
+            padding: 0 1rem;
+        }
+        /* Stack the two canvases vertically */
+        .canvas-row {
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .canvas-container {
+            width: 100% !important;
+        }
+        /* Make each canvas full-width */
+        #plotImfp,
+        #plotFunc {
+            width: 100% !important;
+            height: auto; /* you can keep a fixed height if you like */
+        }
+        }
+        
         body {
             background-color: #121212;
             color: #ffffff;
