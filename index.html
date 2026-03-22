@@ -244,7 +244,7 @@
         }
 
         .eels-optic-cell input {
-            width: 4rem;
+            /* width: 4rem; */
             font-size: 1rem;
             padding: 3px 4px;
         }
@@ -290,11 +290,7 @@
         <div class="left-panel">
             <div class="container">
                 <div class="field-label">Acceleration voltage:</div>
-                <div class="field-value"><select id="voltage">
-                        <option value="30">30</option>
-                        <option value="80" selected>80</option>
-                        <option value="200">200</option>
-                    </select></div>
+                <div class="field-value"><input id="voltage" type="number" step="any" value="80" min="1"></div>
                 <div class="field-unit">[keV]</div>
 
                 <div class="field-label">beta (v/c):</div>
@@ -384,7 +380,7 @@
                         <span>[mrad]</span>
                     </div>
                     <div class="eels-optic-cell">
-                        <label for="eels-apt-x">Aperture Shift x:</label>
+                        <label for="eels-apt-x">Apt. Shift x:</label>
                         <input id="eels-apt-x" type="number" step="any" value="0">
                         <span>[mrad]</span>
                     </div>
@@ -395,7 +391,7 @@
                         <span>[mrad]</span>
                     </div>
                     <div class="eels-optic-cell">
-                        <label for="eels-apt-y">Aperture Shift y:</label>
+                        <label for="eels-apt-y">Apt. Shift y:</label>
                         <input id="eels-apt-y" type="number" step="any" value="0">
                         <span>[mrad]</span>
                     </div>
@@ -464,7 +460,11 @@
                     const c = 2.99792458e8; // speed of light in m/s
                     //const hbarc = 1973.26980444041; // hbar*c in eV⋅Å
                     const mc2 = 510.99891; /* mc^2 of electron in keV */
-                    const lambdaValues = { 30: 0.069790834221, 80: 0.04175717201, 200: 0.025079347455 };
+                    // Relativistic de Broglie wavelength in Å: λ = hc / sqrt(eV*(eV+2*m0c2))
+                    // hc = 12.398419 keV·Å, m0c2 = 510.99891 keV
+                    function calcLambda(vKeV) {
+                        return 12.398419 / Math.sqrt(vKeV * (vKeV + 2 * mc2));
+                    }
                     const voltageEl = document.getElementById('voltage');
                     const difInput = document.getElementById('difrmrad');
                     const elossInput = document.getElementById('eloss');  // in eV
@@ -649,7 +649,7 @@
                         const molMass = calculateMolarMass(counts);
                         const rho = (molMass * Z / NA) / (V * 1e-24);
                         document.getElementById('massDensity').textContent = rho.toFixed(4);
-                        document.getElementById('diameter').textContent = (0.61* lambdaValues[v]/alpha*1e3).toFixed(4);
+                        document.getElementById('diameter').textContent = (0.61 * calcLambda(v) / alpha * 1e3).toFixed(4);
 
                         const energies = linspace(1, 200);
                         // new (full-routine) calls:
@@ -727,7 +727,7 @@
                         const distance = logspace(0.1, 100, 200);
                         const Zef = npsum(normFracArr.map((f, i) => f * Zarr[i]));
                         const r0 = 0.529177210903*Zef**(-1/3)  // Lenz model, Bohr radius is in A
-                        const k0 = 2 * Math.PI / lambdaValues[v]; // wavevector in 1/Å
+                        const k0 = 2 * Math.PI / calcLambda(v); // wavevector in 1/Å
                         const gamma = 1 + v / mc2; // relativistic factor
                         const thE = (window.eloss / v * gamma) / (1 + gamma) / 1000; // in rad
                         const thR = Math.sqrt(2*thE); // in rad
@@ -745,16 +745,16 @@
                     function updateValues() {
                         const v = +voltageEl.value;  // in keV
                         const gamma = 1 + v / mc2; // relativistic factor
-                        //const lambda = 12.26425966 / Math.sqrt(v * (1 + v*0.978475668e-6)); // in angstroms
-                        document.getElementById('wavelength').textContent = lambdaValues[v].toFixed(4);
-                        document.getElementById('momentum').textContent = (1 / lambdaValues[v] * 0.001 * window.difrmrad).toFixed(4);
+                        const lam = calcLambda(v);
+                        document.getElementById('wavelength').textContent = lam.toFixed(6);
+                        document.getElementById('momentum').textContent = (1 / lam * 0.001 * window.difrmrad).toFixed(4);
                         document.getElementById('betavc').textContent = (Math.sqrt(1 - 1/gamma**2)).toFixed(4);
                         document.getElementById('thE').textContent = ( (window.eloss/v*gamma)/(1+gamma) ).toFixed(4);
                         document.getElementById('ridge').textContent = ( Math.sqrt((window.eloss/v/1000 * 2*gamma) / (1 + gamma))*1000 ).toFixed(4);  //convert to mrad
                         updatePlot();
                     }
 
-                    voltageEl.addEventListener('change', updateValues);
+                    voltageEl.addEventListener('input', updateValues);
                     difInput.addEventListener('input', () => { window.difrmrad = parseFloat(difInput.value) || 1.0; updateValues(); });
                     elossInput.addEventListener('input', () => { window.eloss = parseFloat(elossInput.value) || 40.0; updateValues(); });
                     ['formula', 'alpha', 'beta', 'ucVolume', 'z'].forEach(id => document.getElementById(id).addEventListener('input', updatePlot));
