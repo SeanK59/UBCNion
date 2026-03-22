@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aberration Simulation</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    body {
+      background: #121212;
+      color: #e0e0e0;
+      font-family: Georgia, serif;
+      max-width: 820px;
+      margin: 40px auto;
+      padding: 0 24px;
+      line-height: 1.7;
+    }
+    h1 { color: #80cbc4; font-size: 1.6rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
+    h2 { color: #80cbc4; font-size: 1.2rem; margin-top: 2rem; }
+    .eq { background: #1e1e1e; border-left: 3px solid #80cbc4; padding: 10px 18px; margin: 1rem 0; border-radius: 4px; overflow-x: auto; }
+    .note { color: #aaa; font-size: 0.92rem; font-style: italic; }
+    code { background: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.92rem; color: #f48fb1; }
+    hr { border: none; border-top: 1px solid #333; margin: 2rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Simulating Probe Intensity and EELS Zero-Loss Peak from Aberration Functions</h1>
+
+<!-- ── STEM PROBE SECTION ── -->
+<h2>Part 1 — STEM Probe</h2>
+
+<p>
+  The <strong>aberration function</strong> \(\chi\) assigns a phase (in radians) to every point
+  \((q, \varphi)\) in reciprocal space, where \(q\) is the radial coordinate (Å\(^{-1}\)) and
+  \(\varphi\) is the azimuthal angle:
+</p>
+
+<div class="eq">
+$$\chi(q,\varphi) = \frac{2\pi}{\lambda}\left[
+  \frac{(\lambda q)^2}{2}\,C_{10}
+  + \sum_{n,m} \frac{(\lambda q)^{n+1}}{n+1}\,C_{nm}\cos\!\bigl(m(\varphi - \theta_{nm})\bigr)
+\right]$$
+</div>
+
+<p>
+  Each aberration \(C_{nm}\) (e.g. defocus \(C_{10}\), spherical \(C_{30}\), astigmatism \(C_{12}\))
+  distorts the phase by a different power of \(q\) and angular symmetry \(m\).
+  Setting all amplitudes to zero gives \(\chi = 0\) everywhere — the ideal, unaberrated case.
+</p>
+
+<p>The <strong>contrast transfer function (CTF)</strong> in reciprocal space is:</p>
+
+<div class="eq">
+$$\text{CTF}(\mathbf{q}) =
+\begin{cases}
+  e^{-i\,\chi(q,\varphi)} & q \leq q_{\text{aperture}} \\
+  0 & \text{otherwise}
+\end{cases}$$
+</div>
+
+<p>
+  The aperture is a hard top-hat mask. Inside it, the CTF has <em>unit magnitude</em> —
+  aberrations only twist the <em>phase</em>, not the amplitude. Outside the aperture, the
+  CTF is zero.
+</p>
+
+<p>The <strong>real-space probe wavefunction</strong> is the inverse Fourier transform:</p>
+
+<div class="eq">
+$$\psi(\mathbf{r}) = \mathcal{F}^{-1}\!\bigl[\,\text{CTF}(\mathbf{q})\bigr]$$
+</div>
+
+<p>And the <strong>probe intensity</strong> is:</p>
+
+<div class="eq">
+$$I(\mathbf{r}) = |\psi(\mathbf{r})|^2$$
+</div>
+
+<p class="note">
+  With no aberrations, CTF&nbsp;=&nbsp;1 inside a disk, whose Fourier transform is an Airy function —
+  a tight, diffraction-limited spot. Aberrations (e.g. defocus adds \(\sim q^2\) phase, \(C_{30}\)
+  adds \(\sim q^4\)) cause different parts of the aperture to arrive out of phase, broadening the probe.
+</p>
+
+<hr>
+
+<!-- ── EELS SECTION ── -->
+<h2>Part 2 — EELS</h2>
+
+<p>
+  For EELS, the energy-loss signal is dispersed along one axis (call it \(x\)).
+  It is more natural to use a <strong>Cartesian aberration function</strong> \(\chi_2\)
+  that separates the dispersive (\(x\)) and non-dispersive (\(y\)) directions:
+</p>
+
+<div class="eq">
+$$\chi_2(\theta_x, \theta_y) = \frac{2\pi}{\lambda}
+\sum_{n=0}^{5}\sum_{m=0}^{5} \frac{E_{nm}}{n+1}\,\theta_x^{\,n+1}\,\theta_y^{\,m}$$
+</div>
+
+<p>
+  where \(\theta_x = q_x\lambda\), \(\theta_y = q_y\lambda\) are the scattering angles, and
+  \(E_{nm}\) is the 6&times;6 matrix of Cartesian aberration coefficients set via <code>Enm</code>.
+</p>
+
+<p>
+  The CTF is built identically to before — <code>exp(-i χ₂)</code> inside the aperture —
+  but now a <strong>1D Fourier transform along the dispersive axis</strong> replaces the 2D transform:
+</p>
+
+<div class="eq">
+$$\Psi_{\text{EELS}}(x, q_y) = \mathcal{F}_x\!\bigl[\,\text{CTF}(q_x, q_y)\bigr]$$
+</div>
+
+<p>
+  By the <a href="https://en.wikipedia.org/wiki/Projection-slice_theorem" style="color:#80cbc4;">
+  projection-slice theorem</a>, this is equivalent to projecting the 2D probe intensity
+  onto the \(x\)-axis. The resulting <strong>EELS intensity pattern</strong> is:
+</p>
+
+<div class="eq">
+$$I_{\text{EELS}}(x, q_y) = |\Psi_{\text{EELS}}|^2$$
+</div>
+
+<p class="note">
+  Aberration terms that couple \(x\) and \(y\) (e.g. \(E_{01}\) — a tilt/dispersion term)
+  shear or broaden the EELS pattern along the dispersive direction, degrading energy resolution
+  and spatial resolution simultaneously.
+</p>
+
+</body>
+</html>

@@ -74,12 +74,14 @@
 
         .credit-container {
             display: flex;
-            width: 80%;
+            flex-direction: column;
+            width: 100%;
             margin-top: 1rem;
-            justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             font-size: 1.2rem;
             color:#ccc;
+            padding: 0 5%;
+            box-sizing: border-box;
         }
 
         .container-plot {
@@ -138,6 +140,145 @@
             font-size: 20px;
             margin-bottom: 1rem;
         }
+
+        /* ── EELS Simulation section ── */
+        .eels-section {
+            width: 100%;
+            margin-top: 2rem;
+            border-top: 1px solid #444;
+            padding-top: 1.5rem;
+        }
+
+        .eels-section h2 {
+            text-align: center;
+            color: #80cbc4;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        .eels-main {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .eels-left {
+            width: 60%;
+            padding-left: 3%;
+            box-sizing: border-box;
+        }
+
+        .eels-right {
+            width: 40%;
+            padding-right: 3%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .enm-grid {
+            display: grid;
+            grid-template-columns: 5rem repeat(6, minmax(0, 1fr));
+            column-gap: 6px;
+            row-gap: 1rem;
+            align-items: end;
+            margin-bottom: 1rem;
+        }
+
+        .enm-col-header {
+            font-size: 1rem;
+            color: #80cbc4;
+            text-align: center;
+            padding-bottom: 2px;
+        }
+
+        .enm-row-label {
+            font-size: 1rem;
+            color: #80cbc4;
+            text-align: right;
+            padding-right: 4px;
+            white-space: nowrap;
+            align-self: center;
+            line-height: 1.35;
+        }
+
+        .enm-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+
+        .enm-cell-label {
+            font-size: 1rem;
+            color: #ccc;
+        }
+
+        .enm-cell input {
+            width: 100%;
+            font-size: 1rem;
+            text-align: center;
+            padding: 2px 1px;
+            box-sizing: border-box;
+        }
+
+        .eels-optic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem 1.5rem;
+            align-items: center;
+            margin-top: 5rem;
+            margin-bottom: 3rem;
+            font-size: 1rem;
+        }
+
+        .eels-optic-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .eels-optic-cell label {
+            white-space: nowrap;
+            color: #ccc;
+        }
+
+        .eels-optic-cell input {
+            width: 4rem;
+            font-size: 1rem;
+            padding: 3px 4px;
+        }
+
+        .eels-optic-cell span {
+            color: #aaa;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+
+        .eels-btn-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            background-color: #1e1e1e;
+            color: #80cbc4;
+            border: 1px solid #80cbc4;
+            padding: 6px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        button:hover {
+            background-color: #2a3a3a;
+        }
+
+        @media (max-width: 800px) {
+            .eels-main { flex-direction: column; }
+            .eels-left, .eels-right { width: 100%; padding: 0 1rem; }
+        }
     </style>
 </head>
 
@@ -187,18 +328,6 @@
                     <canvas id="plotDeloc"></canvas> 
                 </div>
             </div>
-            <div class="credit-container">
-                <p>This is a web-based tool for calculating inelastic mean free path (IMFP) and knock-on damage threshold for transmission electron microscopy.
-                    The IMFP calculator codes were modified from 
-                    <a href="https://www.aahusain.com/posts/2020/11/electron-imfp-estimate/" target="_blank" style="color:#66ccff;">Dr. A. Husain's codes</a>, 
-                    which were based on <a href="https://sites.google.com/view/tem-eels-org/tem-eels-org/" target="_blank" style="color:#66ccff;">the Matlab code of Dr. R. Egerton</a>.
-                    Knock-on damage threshold calculations were adapted from <a href="https://doi.org/10.1016/j.micron.2004.02.003" target="_blank" style="color:#66ccff;">Egerton, Li and Malac, Radiation Damage in the TEM and SEM, Micron 35 399–409 (2004)</a>.
-                    The delocalization calculator is based on the <a href="https://doi.org/10.1007/978-1-4419-9583-4" target="_blank" style="color:#66ccff;">R.F. Egerton's Electron Energy-loss Spectroscopy in the Electron Microscope</a>, Sec.3.11.
-                </p>
-            </div>
-            <div class="credit-container">
-                <p>Webpage maintained by <a href="mailto:sean.kung@ubc.ca" target="_blank" style="color:#66ccff;">Sean Kung</a> at the University of British Columbia.</p>
-            </div>
         </div>
         <div class="right-panel">
             <div class="container-plot">
@@ -206,7 +335,7 @@
                 <div class="field-value"><input id="formula" type="text" value="La Sb Te"></div>
                 <div class="field-unit"></div>
                 <div class="field-label">Convergence half-angle:</div>
-                <div class="field-value"><input id="alpha" type="number" step="any" value="0.5"></div>
+                <div class="field-value"><input id="alpha" type="number" step="any" value="20"></div>
                 <div class="field-unit">[mrad]</div>
                 <div class="field-label">Acceptance half-angle:</div>
                 <div class="field-value"><input id="beta" type="number" step="any" value="20"></div>
@@ -231,13 +360,100 @@
                     
                 </div>
                 <div class="canvas-container">
-                    <div class="canvas-title">Knock-on Damage</div>
+                    <div class="canvas-title">Knock-on Damage (threshold ~25 eV)</div>
                     <canvas id="plotKnock" ></canvas> 
                     
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         EELS Zero-Loss Peak Simulation
+    ══════════════════════════════════════════════════════════ -->
+    <div class="eels-section">
+        <!-- <h2>EELS Zero-Loss Peak Simulation</h2> -->
+        <h2></h2>
+        <div class="eels-main">
+            <!-- LEFT: parameters -->
+            <div class="eels-left">
+                <div class="eels-optic-grid">
+                    <div class="eels-optic-cell">
+                        <label for="eels-optic-x">Optic Axis x:</label>
+                        <input id="eels-optic-x" type="number" step="any" value="0">
+                        <span>[mrad]</span>
+                    </div>
+                    <div class="eels-optic-cell">
+                        <label for="eels-apt-x">Aperture Shift x:</label>
+                        <input id="eels-apt-x" type="number" step="any" value="0">
+                        <span>[mrad]</span>
+                    </div>
+
+                    <div class="eels-optic-cell">
+                        <label for="eels-optic-y">Optic Axis y:</label>
+                        <input id="eels-optic-y" type="number" step="any" value="0">
+                        <span>[mrad]</span>
+                    </div>
+                    <div class="eels-optic-cell">
+                        <label for="eels-apt-y">Aperture Shift y:</label>
+                        <input id="eels-apt-y" type="number" step="any" value="0">
+                        <span>[mrad]</span>
+                    </div>
+                </div>
+
+                <div class="enm-grid" id="enm-inputs">
+                    <!-- populated by JS -->
+                </div>
+            </div>
+
+            <!-- RIGHT: output image -->
+            <div class="eels-right">
+                <div class="canvas-title">EELS ZLP Intensity</div>
+                <canvas id="plotEELS" style="width:80%;"></canvas>
+                <div id="eels-axes-info" style="font-size:0.8rem;color:#aaa;margin-top:6px;"></div>
+                <div style="display:flex;gap:1rem;margin-top:8px;align-items:center;font-size:0.85rem;color:#ccc;">
+                    <label for="eels-colormap">Color:</label>
+                    <select id="eels-colormap">
+                        <option value="bw" selected>B&W</option>
+                        <option value="viridis">Viridis</option>
+                        <option value="plasma">Plasma</option>
+                        <option value="inferno">Inferno</option>
+                        <option value="hot">Hot</option>
+                        <option value="cool">Cool</option>
+                    </select>
+                    <label for="eels-scale">Scale:</label>
+                    <select id="eels-scale">
+                        <option value="linear" selected>Linear</option>
+                        <option value="log">Log</option>
+                    </select>
+                </div>
+                <div class="eels-btn-row" style="margin-top:10px;">
+                    <button id="eels-randomize">Randomize E<sub>nm</sub></button>
+                    <button id="eels-reset">Reset to Default</button>
+                    <button id="eels-run">Simulate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="credit-container" style="border-top:1px solid #444;margin-top:2rem;padding-top:1.5rem;">
+        <p>This is a web-based tool for simulating some useful parameters for a scanning transmission electron microscope.</p>  
+        <p>
+            The IMFP calculator codes were modified from
+            <a href="https://www.aahusain.com/posts/2020/11/electron-imfp-estimate/" target="_blank" style="color:#66ccff;">Dr. A. Husain's codes</a>,
+            which were based on <a href="https://sites.google.com/view/tem-eels-org/tem-eels-org/" target="_blank" style="color:#66ccff;">the Matlab code of Dr. R. Egerton</a>.<br>
+
+            Knock-on damage threshold calculations were adapted from <a href="https://doi.org/10.1016/j.micron.2004.02.003" target="_blank"  style="color:#66ccff;">Egerton, Li and Malac, Radiation Damage in the TEM and SEM, Micron 35 399–409 (2004)</a>.<br>
+
+            The delocalization calculator is based on the <a href="https://doi.org/10.1007/978-1-4419-9583-4" target="_blank" style="color:#66ccff;">R.F. Egerton's Electron Energy-loss Spectroscopy in the Electron Microscope</a>, Sec.3.11.<br>
+
+            The EELS ZLP simulation is based on Dr. Y. Guo's <a href="https://github.com/DrYGuo/EELS-aberration-measurements-and-simulations" target="_blank" style="color:#66ccff;">Github repository</a>, and the details can be found in <a href="https://doi.org/10.48550/arXiv.2302.12922" target="_blank" style="color:#66ccff;">the related publication</a>. The definitions of the aberration coefficients E<sub>nm</sub> and their corresponding angles θ<sub>nm</sub> can be found <a href="EnmSim.html" target="_blank" style="color:#66ccff;">here</a>.
+        </p>
+        <p>
+            Webpage maintained by <a href="mailto:sean.kung@ubc.ca" target="_blank" style="color:#66ccff;">Sean Kung</a> at the University of British Columbia.
+        </p>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             fetch('PeriodicTable.json')
@@ -485,15 +701,15 @@
                             return { label: el, data, borderColor: colors[i % colors.length], fill: false, parsing: false };
                         });
                         // Add horizontal threshold line at y=25
-                        chart2.data.datasets.push({
-                            label: 'Typical knock-on damage threshold',
-                            data: [{ x: 0, y: 25 }, { x: 200, y: 25 }],
-                            borderColor: 'white',
-                            borderDash: [],
-                            fill: false,
-                            pointRadius: 0,
-                            parsing: false
-                        });
+                        // chart2.data.datasets.push({
+                        //     label: 'Typical knock-on damage threshold',
+                        //     data: [{ x: 0, y: 25 }, { x: 200, y: 25 }],
+                        //     borderColor: 'white',
+                        //     borderDash: [],
+                        //     fill: false,
+                        //     pointRadius: 0,
+                        //     parsing: false
+                        // });
                         // Add vertical line at x=voltage
                         const allY2 = chart2.data.datasets.flatMap(ds => ds.data.map(pt => pt.y));
                         const maxY2 = Math.max(...allY2);
@@ -547,6 +763,348 @@
                 })
                 .catch(err => console.error('Failed loading PeriodicTable.json:', err));
         });
+    </script>
+
+    <!-- ══════════════════════════════════════════════════════════
+         EELS Simulation Script (no fetch dependency)
+    ══════════════════════════════════════════════════════════ -->
+    <script>
+    (function() {
+        // ── Physical constants ──
+        const hc = 1.23984193e4;   // eV·Å
+        const m0c2 = 5.109989461e5; // eV
+
+        function wavev(eV) {
+            return Math.sqrt(eV * (eV + 2 * m0c2)) / hc;
+        }
+
+        // ── Enm terms: n+m = 0..5, sorted by (n+m) then n ──
+        // chi_2 term: E[n][m]/(n+1) * thetax^(n+1) * thetay^m
+        // "order" = n+m (user convention: n+m=1 is "1st order", ~50nm)
+        const ENM_TERMS = [];
+        for (let nm = 0; nm <= 5; nm++) {
+            for (let n = 0; n <= nm; n++) {
+                ENM_TERMS.push({ n, m: nm - n, order: nm });
+            }
+        }
+
+        // Display units and Å-conversion scales indexed by order (n+m = 0..5)
+        const orderUnits  = ['nm', 'nm', 'μm', 'μm', 'mm', 'mm'];
+        const orderScales = [1e1,  1e1,  1e4,  1e4,  1e7,  1e7];
+        // Random magnitudes in Å for each order
+        const orderMagAngstrom = [0e3, 2e3, 1e5, 2e6, 5e7, 1e9];
+
+        // ── Build Enm input UI: 6 rows (one per order) × 6 columns (n index) ──
+        const container = document.getElementById('enm-inputs');
+        // Header row: blank label + n=0..5
+        container.appendChild(document.createElement('div'));
+        for (let k = 0; k <= 5; k++) {
+            const h = document.createElement('div');
+            h.className = 'enm-col-header';
+            h.textContent = `n=${k}`;
+            container.appendChild(h);
+        }
+        // Data rows: one per order nm=0..5
+        for (let nm = 0; nm <= 5; nm++) {
+            const rowLbl = document.createElement('div');
+            rowLbl.className = 'enm-row-label';
+            rowLbl.innerHTML = `n+m=${nm}<br><span style="color:#aaa">[${orderUnits[nm]}]</span>`;
+            container.appendChild(rowLbl);
+            for (let k = 0; k <= 5; k++) {
+                if (k <= nm) {
+                    const n = k, m = nm - k;
+                    const cell = document.createElement('div');
+                    cell.className = 'enm-cell';
+                    const cellLbl = document.createElement('div');
+                    cellLbl.className = 'enm-cell-label';
+                    cellLbl.innerHTML = `E<sub>${n}${m}</sub>`;
+                    const inp = document.createElement('input');
+                    inp.type = 'number';
+                    inp.step = 'any';
+                    inp.id = `enm_${n}_${m}`;
+                    inp.value = '0.00';
+                    cell.appendChild(cellLbl);
+                    cell.appendChild(inp);
+                    container.appendChild(cell);
+                } else {
+                    container.appendChild(document.createElement('div'));
+                }
+            }
+        }
+
+        // ── Read Enm matrix (returns 6×6 in Å) ──
+        function readEnm() {
+            const E = Array.from({length: 6}, () => new Array(6).fill(0));
+            for (const { n, m, order } of ENM_TERMS) {
+                const val = parseFloat(document.getElementById(`enm_${n}_${m}`).value) || 0;
+                E[n][m] = val * orderScales[order];
+            }
+            return E;
+        }
+
+        // ── Randomize / Reset / Simulate buttons ──
+        document.getElementById('eels-randomize').addEventListener('click', () => {
+            for (const { n, m, order } of ENM_TERMS) {
+                const mag = orderMagAngstrom[order];
+                const valA = (Math.random() * 2 - 1) * mag;
+                document.getElementById(`enm_${n}_${m}`).value = (valA / orderScales[order]).toFixed(2);
+                // document.getElementById(`enm_0_0`).value = '0.00';
+            }
+            runEELS();
+        });
+
+        document.getElementById('eels-reset').addEventListener('click', () => {
+            for (const { n, m } of ENM_TERMS) {
+                document.getElementById(`enm_${n}_${m}`).value = '0.00';
+            }
+            runEELS();
+        });
+
+        document.getElementById('eels-run').addEventListener('click', runEELS);
+
+        // ── Core physics ──
+        // chi_2: q = [qy_array, qx_array] in Å⁻¹, lam in Å, E is 6×6 Å matrix
+        // Returns phase in radians (same shape as q[0])
+        function chi_2(qy, qx, lam, E) {
+            const Nx = qx.length;
+            const chi = new Float64Array(Nx * qy.length);
+            for (let iy = 0; iy < qy.length; iy++) {
+                const y = qy[iy] * lam;  // θy = qy * λ  (dimensionless, radians)
+                for (let ix = 0; ix < Nx; ix++) {
+                    const x = qx[ix] * lam;  // θx
+                    let val = 0;
+                    for (let n = 0; n < 6; n++) {
+                        for (let m = 0; m < 6; m++) {
+                            if (E[n][m] === 0) continue;
+                            val += E[n][m] / (n + 1) * Math.pow(x, n + 1) * Math.pow(y, m);
+                        }
+                    }
+                    chi[iy * Nx + ix] = 2 * Math.PI * val / lam;
+                }
+            }
+            return chi;
+        }
+
+        // ── Simple FFT (Cooley-Tukey, power-of-2) ──
+        function fft1d(re, im, invert) {
+            const n = re.length;
+            // bit-reversal
+            for (let i = 1, j = 0; i < n; i++) {
+                let bit = n >> 1;
+                for (; j & bit; bit >>= 1) j ^= bit;
+                j ^= bit;
+                if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+            }
+            for (let len = 2; len <= n; len <<= 1) {
+                const ang = 2 * Math.PI / len * (invert ? -1 : 1);
+                const wre = Math.cos(ang), wim = Math.sin(ang);
+                for (let i = 0; i < n; i += len) {
+                    let cur_re = 1, cur_im = 0;
+                    for (let j = 0; j < len / 2; j++) {
+                        const u_re = re[i + j], u_im = im[i + j];
+                        const v_re = re[i + j + len/2] * cur_re - im[i + j + len/2] * cur_im;
+                        const v_im = re[i + j + len/2] * cur_im + im[i + j + len/2] * cur_re;
+                        re[i + j] = u_re + v_re;  im[i + j] = u_im + v_im;
+                        re[i + j + len/2] = u_re - v_re;  im[i + j + len/2] = u_im - v_im;
+                        const new_re = cur_re * wre - cur_im * wim;
+                        cur_im = cur_re * wim + cur_im * wre;
+                        cur_re = new_re;
+                    }
+                }
+            }
+            if (invert) { for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; } }
+        }
+
+        // fftshift equivalent: rotate array by n/2
+        function fftshift1d(arr) {
+            const h = Math.floor(arr.length / 2);
+            return [...arr.slice(h), ...arr.slice(0, h)];
+        }
+
+        // ── Main simulation ──
+        function runEELS() {
+            const eV = (+document.getElementById('voltage').value) * 1e3;  // keV → eV
+            const app = +document.getElementById('alpha').value;            // mrad
+            const opticX = +document.getElementById('eels-optic-x').value; // mrad
+            const opticY = +document.getElementById('eels-optic-y').value;
+            const aptX   = +document.getElementById('eels-apt-x').value;
+            const aptY   = +document.getElementById('eels-apt-y').value;
+            const E = readEnm();
+
+            const k   = wavev(eV);   // Å⁻¹
+            const lam = 1.0 / k;     // Å
+
+            // mrad → Å⁻¹
+            const mrad2invA  = 1e-3 * k;
+            const app_invA   = Math.max(app, 0.01) * mrad2invA;
+            const opticX_invA = opticX * mrad2invA;
+            const opticY_invA = opticY * mrad2invA;
+            const aptX_invA   = aptX   * mrad2invA;
+            const aptY_invA   = aptY   * mrad2invA;
+
+            // Adaptive grid: aperture covers ~40% of Nyquist frequency
+            // → the aperture is always well-sampled regardless of app size
+            const Nx = 1024, Ny = 1024;  // cols=dispersive(x), rows=non-dispersive(y)
+            const f  = 0.80;
+            const Lx = Nx * f / (2 * app_invA);  // Å
+            const Ly = Ny * f / (2 * app_invA);  // Å
+
+            // q-space axes (fftfreq convention): q[i] = (i < N/2 ? i : i-N) / L
+            const qx = new Float64Array(Nx);
+            const qy = new Float64Array(Ny);
+            const dqx = 1.0 / Lx, dqy = 1.0 / Ly;
+            for (let i = 0; i < Nx; i++) qx[i] = (i < Nx / 2 ? i : i - Nx) * dqx;
+            for (let j = 0; j < Ny; j++) qy[j] = (j < Ny / 2 ? j : j - Ny) * dqy;
+
+            // Build CTF: exp(-i·chi_2) inside aperture disk, 0 outside
+            const ctfRe = new Float64Array(Ny * Nx);
+            const ctfIm = new Float64Array(Ny * Nx);
+
+            for (let iy = 0; iy < Ny; iy++) {
+                const qy_c = qy[iy] - opticY_invA;
+                for (let ix = 0; ix < Nx; ix++) {
+                    const qx_c = qx[ix] - opticX_invA;
+                    // Aperture uses aperture-shifted coordinates
+                    const dx = qx_c - aptX_invA, dy = qy_c - aptY_invA;
+                    if (dx * dx + dy * dy > app_invA * app_invA) continue;
+
+                    // chi_2: x = dispersive (E[n][m] term uses thetax^(n+1)*thetay^m)
+                    const thx = qx_c * lam;
+                    const thy = qy_c * lam;
+                    let val = 0;
+                    for (let n = 0; n < 6; n++) {
+                        for (let m = 0; m < 6; m++) {
+                            if (E[n][m] === 0) continue;
+                            val += E[n][m] / (n + 1) * Math.pow(thx, n + 1) * Math.pow(thy, m);
+                        }
+                    }
+                    const phase = 2 * Math.PI * val / lam;
+                    ctfRe[iy * Nx + ix] =  Math.cos(phase);
+                    ctfIm[iy * Nx + ix] = -Math.sin(phase);
+                }
+            }
+
+            // 1D forward FFT along dispersive x-axis for each row, then fftshift both axes
+            const outRe = new Float64Array(Ny * Nx);
+            const outIm = new Float64Array(Ny * Nx);
+            for (let iy = 0; iy < Ny; iy++) {
+                const rowRe = Array.from(ctfRe.subarray(iy * Nx, (iy + 1) * Nx));
+                const rowIm = Array.from(ctfIm.subarray(iy * Nx, (iy + 1) * Nx));
+                fft1d(rowRe, rowIm, false);
+                const sRe = fftshift1d(rowRe);
+                const sIm = fftshift1d(rowIm);
+                for (let ix = 0; ix < Nx; ix++) {
+                    outRe[iy * Nx + ix] = sRe[ix];
+                    outIm[iy * Nx + ix] = sIm[ix];
+                }
+            }
+
+            // Intensity |CTF_FFT|², then fftshift along y
+            const intensity = new Float64Array(Ny * Nx);
+            for (let i = 0; i < Ny * Nx; i++) {
+                intensity[i] = outRe[i] * outRe[i] + outIm[i] * outIm[i];
+            }
+            const shifted = new Float64Array(Ny * Nx);
+            const halfY = Ny / 2;
+            for (let iy = 0; iy < Ny; iy++) {
+                shifted.set(intensity.subarray(iy * Nx, (iy + 1) * Nx), ((iy + halfY) % Ny) * Nx);
+            }
+
+            // Normalize intensity
+            const sorted = Float64Array.from(shifted).sort();
+            const norm = sorted[Math.floor(sorted.length * 0.999)] || 1;
+
+            // Color scale (linear or log)
+            const useLog = document.getElementById('eels-scale').value === 'log';
+            const colormap = document.getElementById('eels-colormap').value;
+
+            // Colourmap lookup tables (all return [r,g,b] 0-255)
+            function applyColormap(t, name) {
+                // t in [0,1]
+                switch (name) {
+                    case 'viridis': {
+                        // sampled viridis stops
+                        const stops = [[68,1,84],[72,40,120],[62,83,160],[49,120,187],[38,153,175],[31,184,152],[53,212,117],[112,228,77],[180,222,44],[253,231,37]];
+                        return lerpStops(t, stops);
+                    }
+                    case 'plasma': {
+                        const stops = [[13,8,135],[84,2,163],[139,10,165],[185,50,137],[219,92,104],[244,136,73],[254,188,43],[240,249,33]];
+                        return lerpStops(t, stops);
+                    }
+                    case 'inferno': {
+                        const stops = [[0,0,4],[40,11,84],[101,21,110],[159,42,99],[212,72,66],[245,125,21],[252,194,48],[252,255,164]];
+                        return lerpStops(t, stops);
+                    }
+                    case 'hot': {
+                        const stops = [[0,0,0],[128,0,0],[255,0,0],[255,128,0],[255,255,0],[255,255,255]];
+                        return lerpStops(t, stops);
+                    }
+                    case 'cool': {
+                        // cyan → magenta
+                        return [Math.round(t*255), Math.round((1-t)*255), 255];
+                    }
+                    default: { // bw
+                        const v = Math.round(t * 255);
+                        return [v, v, v];
+                    }
+                }
+            }
+
+            function lerpStops(t, stops) {
+                const n = stops.length - 1;
+                const idx = Math.min(n - 1, Math.floor(t * n));
+                const f = t * n - idx;
+                const a = stops[idx], b = stops[idx + 1];
+                return [
+                    Math.round(a[0] + f * (b[0] - a[0])),
+                    Math.round(a[1] + f * (b[1] - a[1])),
+                    Math.round(a[2] + f * (b[2] - a[2]))
+                ];
+            }
+
+            // Render to canvas
+            const canvas = document.getElementById('plotEELS');
+            canvas.width  = Nx;
+            canvas.height = Ny;
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.createImageData(Nx, Ny);
+
+            // Pre-compute log scale parameters
+            const logMin = useLog ? Math.log1p(0) : 0;
+            const logMax = useLog ? Math.log1p(norm) : norm;
+
+            for (let i = 0; i < Ny * Nx; i++) {
+                let t;
+                if (useLog) {
+                    t = Math.min(1, Math.log1p(shifted[i]) / logMax);
+                } else {
+                    t = Math.min(1, shifted[i] / norm);
+                }
+                const [r, g, b] = applyColormap(t, colormap);
+                imgData.data[i * 4 + 0] = r;
+                imgData.data[i * 4 + 1] = g;
+                imgData.data[i * 4 + 2] = b;
+                imgData.data[i * 4 + 3] = 255;
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            // // Info text
+            // const pxA = Lx / Nx;
+            // const fovNm = (Lx / 10).toFixed(1);
+            // document.getElementById('eels-axes-info').textContent =
+            //     `${Nx}×${Ny} px | FOV: ${fovNm} nm (x, dispersive) × ${(Ly/10).toFixed(1)} nm (y) | ${pxA.toFixed(2)} Å/px`;
+        }
+
+        // Run once on page load (after a short delay to let the voltage element initialise)
+        window.addEventListener('load', () => setTimeout(runEELS, 300));
+
+        // Re-run when voltage changes
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('voltage').addEventListener('change', runEELS);
+            document.getElementById('eels-colormap').addEventListener('change', runEELS);
+            document.getElementById('eels-scale').addEventListener('change', runEELS);
+        });
+    })();
     </script>
 </body>
 
