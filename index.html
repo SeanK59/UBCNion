@@ -178,7 +178,7 @@
 
         .enm-grid {
             display: grid;
-            grid-template-columns: 5rem repeat(6, minmax(0, 1fr));
+            grid-template-columns: 1.2rem 5rem repeat(6, minmax(0, 1fr));
             column-gap: 6px;
             row-gap: 1rem;
             align-items: end;
@@ -792,12 +792,13 @@
         const orderUnits  = ['nm', 'nm', 'μm', 'μm', 'mm', 'mm'];
         const orderScales = [1e1,  1e1,  1e4,  1e4,  1e7,  1e7];
         // Random magnitudes in Å for each order
-        const orderMagAngstrom = [0e3, 2e3, 1e5, 2e6, 5e7, 1e9];
+        const orderMagAngstrom = [5e2, 2e3, 1e5, 5e6, 1e8, 5e9];
 
         // ── Build Enm input UI: 6 rows (one per order) × 6 columns (n index) ──
         const container = document.getElementById('enm-inputs');
-        // Header row: blank label + n=0..5
-        container.appendChild(document.createElement('div'));
+        // Header row: checkbox spacer + row-label spacer + n=0..5
+        container.appendChild(document.createElement('div')); // checkbox col header (blank)
+        container.appendChild(document.createElement('div')); // row-label col header (blank)
         for (let k = 0; k <= 5; k++) {
             const h = document.createElement('div');
             h.className = 'enm-col-header';
@@ -806,6 +807,17 @@
         }
         // Data rows: one per order nm=0..5
         for (let nm = 0; nm <= 5; nm++) {
+            // Checkbox
+            const chkWrap = document.createElement('div');
+            chkWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;';
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.id = `enm-row-chk-${nm}`;
+            chk.checked = (nm >= 1 && nm <= 3);
+            chk.style.cssText = 'width:0.9rem;height:0.9rem;cursor:pointer;accent-color:#80cbc4;';
+            chkWrap.appendChild(chk);
+            container.appendChild(chkWrap);
+            // Row label
             const rowLbl = document.createElement('div');
             rowLbl.className = 'enm-row-label';
             rowLbl.innerHTML = `n+m=${nm}<br><span style="color:#aaa">[${orderUnits[nm]}]</span>`;
@@ -844,11 +856,14 @@
 
         // ── Randomize / Reset / Simulate buttons ──
         document.getElementById('eels-randomize').addEventListener('click', () => {
-            for (const { n, m, order } of ENM_TERMS) {
+            for (let nm = 0; nm <= 5; nm++) {
+                if (!document.getElementById(`enm-row-chk-${nm}`).checked) continue;
+                const order = nm;
                 const mag = orderMagAngstrom[order];
-                const valA = (Math.random() * 2 - 1) * mag;
-                document.getElementById(`enm_${n}_${m}`).value = (valA / orderScales[order]).toFixed(2);
-                // document.getElementById(`enm_0_0`).value = '0.00';
+                for (const { n, m } of ENM_TERMS.filter(t => t.order === nm)) {
+                    const valA = (Math.random() * 2 - 1) * mag;
+                    document.getElementById(`enm_${n}_${m}`).value = (valA / orderScales[order]).toFixed(2);
+                }
             }
             runEELS();
         });
@@ -924,7 +939,7 @@
         // ── Main simulation ──
         function runEELS() {
             const eV = (+document.getElementById('voltage').value) * 1e3;  // keV → eV
-            const app = +document.getElementById('alpha').value;            // mrad
+            const app = +document.getElementById('beta').value;             // mrad (acceptance half-angle)
             const opticX = +document.getElementById('eels-optic-x').value; // mrad
             const opticY = +document.getElementById('eels-optic-y').value;
             const aptX   = +document.getElementById('eels-apt-x').value;
@@ -1012,7 +1027,7 @@
 
             // Normalize intensity
             const sorted = Float64Array.from(shifted).sort();
-            const norm = sorted[Math.floor(sorted.length * 0.999)] || 1;
+            const norm = sorted[Math.floor(sorted.length * 0.998)] || 1;
 
             // Color scale (linear or log)
             const useLog = document.getElementById('eels-scale').value === 'log';
