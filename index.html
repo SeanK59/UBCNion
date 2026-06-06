@@ -771,65 +771,69 @@
                     elossInput.addEventListener('input', () => { window.eloss = parseFloat(elossInput.value) || 40.0; updateValues(); });
                     ['formula', 'alpha', 'beta', 'ucVolume', 'z'].forEach(id => document.getElementById(id).addEventListener('input', updatePlot));
 
-                    // ── COD Lookup ──
-                    function toHillQuery(counts) {
-                        const elements = Object.keys(counts);
-                        let sorted;
-                        if (elements.includes('C')) {
-                            const rest = elements.filter(e => e !== 'C' && e !== 'H').sort();
-                            sorted = ['C', ...(elements.includes('H') ? ['H'] : []), ...rest];
+                    // ── COD Lookup (local cod_lookup.json) ──
+                    let codDb = null;
+
+                    function makeKey(counts) {
+                        const els = Object.keys(counts).filter(e => counts[e] > 0);
+                        let ordered;
+                        if (els.includes('C')) {
+                            const rest = els.filter(e => e !== 'C' && e !== 'H').sort();
+                            ordered = ['C', ...(els.includes('H') ? ['H'] : []), ...rest];
                         } else {
-                            sorted = [...elements].sort();
+                            ordered = [...els].sort();
                         }
-                        return sorted.filter(e => counts[e] > 0)
-                            .map(e => {
-                                const n = counts[e];
-                                if (n === 1) return e;
-                                const s = Number.isInteger(n) ? String(n) : String(n).replace(/\.?0+$/, '');
-                                return `${e}${s}`;
-                            })
-                            .join(' ');
+                        return ordered.map(e => {
+                            const n = counts[e];
+                            const r = Math.round(n);
+                            if (Math.abs(n - r) < 0.005) {
+                                return r === 1 ? e : e + r;
+                            }
+                            return e + String(n.toFixed(2)).replace(/\.?0+$/, '');
+                        }).join('');
                     }
 
                     async function lookupCOD() {
                         const formula = document.getElementById('formula').value.trim();
                         if (!formula) return;
-                        const counts = parseFormula(formula);
-                        const hillQuery = toHillQuery(counts);
                         const statusEl = document.getElementById('codStatus');
                         const resultsEl = document.getElementById('codResults');
-                        statusEl.textContent = 'Searching\u2026';
-                        resultsEl.style.display = 'none';
-                        try {
-                            const url = `https://www.crystallography.net/cod/result.php?formula=${encodeURIComponent(hillQuery)}&format=json`;
-                            const resp = await fetch(url);
-                            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                            const data = await resp.json();
-                            const valid = (Array.isArray(data) ? data : []).filter(d => d.vol && d.Z && parseFloat(d.vol) > 0 && parseInt(d.Z) > 0);
-                            if (valid.length === 0) {
-                                statusEl.textContent = `No results for "${hillQuery}"`;
+                        if (!codDb) {
+                            statusEl.textContent = 'Loading database\u2026';
+                            resultsEl.style.display = 'none';
+                            try {
+                                const resp = await fetch('cod_lookup.json');
+                                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                                codDb = await resp.json();
+                            } catch(err) {
+                                statusEl.textContent = 'Failed to load cod_lookup.json';
+                                console.error(err);
                                 return;
                             }
-                            statusEl.textContent = `${valid.length} result(s) \u2014 select to apply:`;
-                            resultsEl.innerHTML = '';
-                            valid.slice(0, 50).forEach(entry => {
-                                const opt = document.createElement('option');
-                                opt.value = JSON.stringify({ vol: parseFloat(entry.vol), Z: parseInt(entry.Z) });
-                                const name = (entry.mineral && entry.mineral.trim()) ? entry.mineral : (entry.formula || '');
-                                const sg = entry.sg ? `, ${entry.sg}` : '';
-                                opt.textContent = `${name} \u2014 V=${parseFloat(entry.vol).toFixed(2)} \u00c5\u00b3, Z=${entry.Z}${sg} (COD ${entry.file})`;
-                                resultsEl.appendChild(opt);
-                            });
-                            resultsEl.style.display = 'block';
-                            const first = JSON.parse(resultsEl.value);
-                            document.getElementById('ucVolume').value = first.vol.toFixed(3);
-                            document.getElementById('z').value = first.Z;
-                            document.getElementById('modeRhoCell').checked = true;
-                            checkMode();
-                        } catch(err) {
-                            statusEl.textContent = 'Lookup failed (network/CORS error)';
-                            console.error(err);
                         }
+                        const counts = parseFormula(formula);
+                        const key = makeKey(counts);
+                        const entries = codDb[key];
+                        if (!entries || entries.length === 0) {
+                            statusEl.textContent = `No results for \u201c${key}\u201d`;
+                            resultsEl.style.display = 'none';
+                            return;
+                        }
+                        statusEl.textContent = `${entries.length} result(s) \u2014 select to apply:`;
+                        resultsEl.innerHTML = '';
+                        entries.forEach(entry => {
+                            const opt = document.createElement('option');
+                            opt.value = JSON.stringify({ vol: entry.v, Z: entry.Z });
+                            const sg = entry.s || 'unknown SG';
+                            opt.textContent = `${key} \u2014 ${sg}, V=${entry.v.toFixed(2)} \u00c5\u00b3, Z=${entry.Z}`;
+                            resultsEl.appendChild(opt);
+                        });
+                        resultsEl.style.display = 'block';
+                        const first = JSON.parse(resultsEl.value);
+                        document.getElementById('ucVolume').value = first.vol.toFixed(3);
+                        document.getElementById('z').value = first.Z;
+                        document.getElementById('modeRhoCell').checked = true;
+                        checkMode();
                     }
 
                     document.getElementById('codLookup').addEventListener('click', lookupCOD);
