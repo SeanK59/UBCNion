@@ -119,6 +119,11 @@
             box-sizing: border-box;
         }
 
+        input:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
         .canvas-row {
             display: flex;
             gap: 20px;
@@ -329,21 +334,23 @@
             <div class="container-plot">
                 <div class="field-label">Formula:</div>
                 <div class="field-value"><input id="formula" type="text" value="La Sb Te"></div>
-                <div class="field-unit"></div>
+                <div class="field-unit"><button id="codLookup" style="padding:3px 10px;font-size:0.85rem;">COD</button></div>
+                <div id="codStatus" style="text-align:right;align-self:center;font-size:0.8rem;color:#aaa;"></div>
+                <div style="grid-column:2 / 4;align-self:center;"><select id="codResults" style="display:none;width:100%;font-size:0.85rem;"></select></div>
                 <div class="field-label">Convergence half-angle:</div>
                 <div class="field-value"><input id="alpha" type="number" step="any" value="20"></div>
                 <div class="field-unit">[mrad]</div>
                 <div class="field-label">Acceptance half-angle:</div>
                 <div class="field-value"><input id="beta" type="number" step="any" value="20"></div>
                 <div class="field-unit">[mrad]</div>
-                <div class="field-label">Unit cell volume:</div>
-                <div class="field-value"><input id="ucVolume" type="number" step="any" value="188.787491"></div>
+                <div class="field-label"><label style="cursor:pointer;"><input type="radio" id="modeRhoCell" name="densityMode" value="cell"> Unit cell volume:</label></div>
+                <div class="field-value"><input id="ucVolume" type="number" step="any" value="188.787"></div>
                 <div class="field-unit">[Å<sup>3</sup>]</div>
                 <div class="field-label">Formula per unit cell:</div>
                 <div class="field-value"><input id="z" type="number" step="any" value="2"></div>
                 <div class="field-unit"></div>
-                <div class="field-label">Mass density:</div>
-                <div class="field-value"><span id="massDensity"></span></div>
+                <div class="field-label"><label style="cursor:pointer;"><input type="radio" id="modeRhoMass" name="densityMode" value="mass" checked> Mass density:</label></div>
+                <div class="field-value"><input id="massDensity" type="number" step="any" value=""></div>
                 <div class="field-unit">[g/cm<sup>3</sup>]</div>
                 <div class="field-label">Diffraction limited probe:</div>
                 <div class="field-value"><span id="diameter"></span></div>
@@ -647,8 +654,13 @@
                         const formula = document.getElementById('formula').value;
                         const counts = parseFormula(formula);
                         const molMass = calculateMolarMass(counts);
-                        const rho = (molMass * Z / NA) / (V * 1e-24);
-                        document.getElementById('massDensity').textContent = rho.toFixed(4);
+                        let rho;
+                        if (document.getElementById('modeRhoMass').checked) {
+                            rho = +document.getElementById('massDensity').value || 0;
+                        } else {
+                            rho = (molMass * Z / NA) / (V * 1e-24);
+                            document.getElementById('massDensity').value = rho.toFixed(4);
+                        }
                         document.getElementById('diameter').textContent = (0.61 * calcLambda(v) / alpha * 1e3).toFixed(4);
 
                         const energies = linspace(1, 200);
@@ -758,6 +770,99 @@
                     difInput.addEventListener('input', () => { window.difrmrad = parseFloat(difInput.value) || 1.0; updateValues(); });
                     elossInput.addEventListener('input', () => { window.eloss = parseFloat(elossInput.value) || 40.0; updateValues(); });
                     ['formula', 'alpha', 'beta', 'ucVolume', 'z'].forEach(id => document.getElementById(id).addEventListener('input', updatePlot));
+
+                    // ── COD Lookup ──
+                    function toHillQuery(counts) {
+                        const elements = Object.keys(counts);
+                        let sorted;
+                        if (elements.includes('C')) {
+                            const rest = elements.filter(e => e !== 'C' && e !== 'H').sort();
+                            sorted = ['C', ...(elements.includes('H') ? ['H'] : []), ...rest];
+                        } else {
+                            sorted = [...elements].sort();
+                        }
+                        return sorted.filter(e => counts[e] > 0)
+                            .map(e => {
+                                const n = counts[e];
+                                if (n === 1) return e;
+                                const s = Number.isInteger(n) ? String(n) : String(n).replace(/\.?0+$/, '');
+                                return `${e}${s}`;
+                            })
+                            .join(' ');
+                    }
+
+                    async function lookupCOD() {
+                        const formula = document.getElementById('formula').value.trim();
+                        if (!formula) return;
+                        const counts = parseFormula(formula);
+                        const hillQuery = toHillQuery(counts);
+                        const statusEl = document.getElementById('codStatus');
+                        const resultsEl = document.getElementById('codResults');
+                        statusEl.textContent = 'Searching\u2026';
+                        resultsEl.style.display = 'none';
+                        try {
+                            const url = `https://www.crystallography.net/cod/result.php?formula=${encodeURIComponent(hillQuery)}&format=json`;
+                            const resp = await fetch(url);
+                            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                            const data = await resp.json();
+                            const valid = (Array.isArray(data) ? data : []).filter(d => d.vol && d.Z && parseFloat(d.vol) > 0 && parseInt(d.Z) > 0);
+                            if (valid.length === 0) {
+                                statusEl.textContent = `No results for "${hillQuery}"`;
+                                return;
+                            }
+                            statusEl.textContent = `${valid.length} result(s) \u2014 select to apply:`;
+                            resultsEl.innerHTML = '';
+                            valid.slice(0, 50).forEach(entry => {
+                                const opt = document.createElement('option');
+                                opt.value = JSON.stringify({ vol: parseFloat(entry.vol), Z: parseInt(entry.Z) });
+                                const name = (entry.mineral && entry.mineral.trim()) ? entry.mineral : (entry.formula || '');
+                                const sg = entry.sg ? `, ${entry.sg}` : '';
+                                opt.textContent = `${name} \u2014 V=${parseFloat(entry.vol).toFixed(2)} \u00c5\u00b3, Z=${entry.Z}${sg} (COD ${entry.file})`;
+                                resultsEl.appendChild(opt);
+                            });
+                            resultsEl.style.display = 'block';
+                            const first = JSON.parse(resultsEl.value);
+                            document.getElementById('ucVolume').value = first.vol.toFixed(3);
+                            document.getElementById('z').value = first.Z;
+                            document.getElementById('modeRhoCell').checked = true;
+                            checkMode();
+                        } catch(err) {
+                            statusEl.textContent = 'Lookup failed (network/CORS error)';
+                            console.error(err);
+                        }
+                    }
+
+                    document.getElementById('codLookup').addEventListener('click', lookupCOD);
+                    document.getElementById('codResults').addEventListener('change', () => {
+                        const sel = document.getElementById('codResults');
+                        const { vol, Z } = JSON.parse(sel.value);
+                        document.getElementById('ucVolume').value = vol.toFixed(3);
+                        document.getElementById('z').value = Z;
+                        document.getElementById('modeRhoCell').checked = true;
+                        checkMode();
+                    });
+
+                    function checkMode() {
+                        const isMass = document.getElementById('modeRhoMass').checked;
+                        document.getElementById('ucVolume').disabled = isMass;
+                        document.getElementById('z').disabled = isMass;
+                        document.getElementById('massDensity').disabled = !isMass;
+                        updatePlot();
+                    }
+                    document.getElementById('modeRhoMass').addEventListener('change', checkMode);
+                    document.getElementById('modeRhoCell').addEventListener('change', checkMode);
+                    document.getElementById('massDensity').addEventListener('input', updatePlot);
+
+                    // Pre-fill massDensity from default cell params, then apply initial mode
+                    {
+                        const c0 = parseFormula(document.getElementById('formula').value);
+                        const m0 = calculateMolarMass(c0);
+                        const v0 = +document.getElementById('ucVolume').value;
+                        const z0 = +document.getElementById('z').value;
+                        document.getElementById('massDensity').value = ((m0 * z0 / NA) / (v0 * 1e-24)).toFixed(4);
+                    }
+                    document.getElementById('ucVolume').disabled = true;
+                    document.getElementById('z').disabled = true;
 
                     updateValues();
                 })
