@@ -101,8 +101,10 @@ for formula, vol, Z, sg in rows:
         counts = parse_cod_formula(formula)
         if not counts:
             continue
-        # Skip purely organic/molecular entries — not relevant for TEM
-        if set(counts.keys()).issubset(ORGANIC_ONLY_ELS):
+        # Skip purely organic/molecular entries — not relevant for TEM.
+        # Exception: pure carbon allotropes (diamond, graphite, fullerenes…) are kept.
+        els = set(counts.keys())
+        if els.issubset(ORGANIC_ONLY_ELS) and els != {'C'}:
             continue
         key = make_key(counts)
         sg_key = (sg or '').strip() or '_'
