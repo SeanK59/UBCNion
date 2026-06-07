@@ -334,9 +334,10 @@
             <div class="container-plot">
                 <div class="field-label">Formula:</div>
                 <div class="field-value"><input id="formula" type="text" value="La Sb Te"></div>
-                <div class="field-unit"><button id="codLookup" style="padding:3px 10px;font-size:0.85rem;">COD</button></div>
+                <div class="field-unit"><button id="codLookup" style="padding:3px 10px;font-size:0.85rem;">Search COD</button></div>
                 <div id="codStatus" style="text-align:right;align-self:center;font-size:0.8rem;color:#aaa;"></div>
-                <div style="grid-column:2 / 4;align-self:center;"><select id="codResults" style="display:none;width:100%;font-size:0.85rem;"></select></div>
+                <div style="align-self:center;"><select id="codResults" style="display:none;width:100%;font-size:0.85rem;"></select></div>
+                <div></div>
                 <div class="field-label">Convergence half-angle:</div>
                 <div class="field-value"><input id="alpha" type="number" step="any" value="20"></div>
                 <div class="field-unit">[mrad]</div>
@@ -492,8 +493,8 @@
                         data: {
                             datasets: [
                                 { label: 'Malis (1988)', data: [], borderColor: 'cyan', fill: false, parsing: false },
-                                { label: 'Iakoubovskii (2008)', data: [], borderColor: 'magenta', fill: false, parsing: false },
-                                { label: 'Jin & Li (2006)', data: [], borderColor: 'yellow', fill: false, parsing: false }
+                                { label: 'Iakoubovskii (2008)', data: [], borderColor: 'magenta', fill: false, parsing: false }
+                                // { label: 'Jin & Li (2006)', data: [], borderColor: 'yellow', fill: false, parsing: false }
                             ]
                         },
                         options: {
@@ -682,16 +683,15 @@
                             x: e,
                             y: IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, e, 'LiI2')
                         }));
-                        chart1.data.datasets[2].data = energies.map(e => ({
-                            x: e,
-                            y: IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, e, 'LiJL')
-                        }));
+                        // chart1.data.datasets[2].data = energies.map(e => ({
+                        //     x: e,
+                        //     y: IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, e, 'LiJL')
+                        // }));
 
                         // Add vertical line on IMFP chart
-                        const maxY1 = Math.max(IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiM'), 
-                        IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiI2'),
-                        IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiJL'));
-                        chart1.data.datasets[3] = {
+                        const maxY1 = Math.max(IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiM'),
+                        IMFP_full(Zarr, Aarr, normFracArr, alpha, beta, rho, v, 'LiI2'));
+                        chart1.data.datasets[2] = {
                             data: [{ x: v, y: 0 }, { x: v, y: maxY1 }],
                             borderColor: 'white',
                             borderDash: [6, 6],
